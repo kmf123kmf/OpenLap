@@ -111,11 +111,11 @@ class PositionGraph {
             record = new VehiclePositionRecord(v);
 
             //insert sorted by vehicle number
-            let i = this.data.findIndex( (r) => r.vehicle.number() > v.number());
-            if(i > -1){
+            let i = this.data.findIndex((r) => r.vehicle.number() > v.number());
+            if (i > -1) {
                 this.data.splice(i, 0, record);
             }
-            else{
+            else {
                 this.data.push(record);
             }
         }
@@ -223,7 +223,7 @@ class PositionGraph {
             let txt = makeSvg("text");
             txt.textContent = `#${v.number()} - ${v.driver.name}`;
             txt.setAttribute("x", String(legendX + 20 + 5));
-            txt.setAttribute("y", String(legendY + (20/2 + 3)));
+            txt.setAttribute("y", String(legendY + (20 / 2 + 3)));
             this.svg.appendChild(txt);
 
             legendY += 20 + 5;
@@ -1730,7 +1730,7 @@ class RaceManager {
         return tr;
     }
 
-    isbefore(a: HTMLElement, b: HTMLElement) : boolean {
+    isbefore(a: HTMLElement, b: HTMLElement): boolean {
         if (a.parentNode == b.parentNode) {
             for (let cur: any = a; cur; cur = cur.previousSibling) {
                 if (cur === b) {
@@ -2133,6 +2133,69 @@ class DetectorConnection {
     }
 }
 
+class SimulatedConnection extends DetectorConnection {
+    private simRunning = false;
+    private simStartTime: number = 0;
+    private fakeDrivers: number[] = [];
+
+    constructor() {
+        super();
+    }
+
+    private beginSim() {
+        this.endSim();
+
+        this.simRunning = true;
+        for (let i = 0; i < 10; i++) {
+            this.fakeDrivers.push(setTimeout((idx: number) => this.sendDetection(idx), 1000 + Math.random() * 3001, i));
+        }
+    }
+
+    private endSim() {
+        this.simRunning = false;
+        for (let d of this.fakeDrivers) {
+            clearTimeout(d);
+        }
+        this.fakeDrivers = [];
+    }
+
+    private sendDetection(i: number) {
+        if(!this.simRunning){
+            return;
+        }
+
+        let msg = `%L${i.toString(16)},${(Date.now() - this.simStartTime).toString(16)}&`;
+        this.notifyOnMessage(msg);
+        this.fakeDrivers[i] = setTimeout((idx: number) => this.sendDetection(idx), 15000 + Math.random() * 5001, i);
+    }
+
+    send(msg: string) {
+        switch (msg) {
+            case "%I&":
+                this.simStartTime = Date.now();
+                break;
+            case "%F&":
+                break;
+            case "%B&":
+                this.beginSim();
+                break;
+            case "%E&":
+                this.endSim();
+                break;
+        }
+    }
+
+    connect(url: string) {
+        this.isConnected = true;
+        this.notifyOnConnected();
+    }
+
+    disconnect() {
+        this.isConnected = false;
+        this.notifyOnDisconnected();
+    }
+}
+
 class ZRoundTransformer {
     chunks: string = "";
 
@@ -2380,8 +2443,9 @@ function initDetectorConnection() {
         detectorConnection.onDisconnected = null;
         detectorConnection.onMessage = null;
     }
-    detectorConnection = new WebSocketDetectorConnection(`ws://${host}/ws`);
+    //detectorConnection = new WebSocketDetectorConnection(`ws://${host}/ws`);
     //detectorConnection = new SerialDetectorConnection();
+    detectorConnection = new SimulatedConnection();
     detectorConnection.onConnected = onDetectorOpen;
     detectorConnection.onDisconnected = onDetectorClose;
     detectorConnection.onMessage = onDetectorMessage;
