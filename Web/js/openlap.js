@@ -1769,7 +1769,7 @@ class DetectorConnection {
 class SimulatedConnection extends DetectorConnection {
     simRunning = false;
     simStartTime = 0;
-    fakeDrivers = [];
+    simDrivers = [];
     constructor() {
         super();
     }
@@ -1777,23 +1777,23 @@ class SimulatedConnection extends DetectorConnection {
         this.endSim();
         this.simRunning = true;
         for (let i = 0; i < 10; i++) {
-            this.fakeDrivers.push(setTimeout((idx) => this.sendDetection(idx), 1000 + Math.random() * 3001, i));
+            this.simDrivers.push(setTimeout((idx) => this.simulateDetection(idx), 1000 + Math.random() * 3001, i));
         }
     }
     endSim() {
         this.simRunning = false;
-        for (let d of this.fakeDrivers) {
+        for (let d of this.simDrivers) {
             clearTimeout(d);
         }
-        this.fakeDrivers = [];
+        this.simDrivers = [];
     }
-    sendDetection(i) {
+    simulateDetection(transponderId) {
         if (!this.simRunning) {
             return;
         }
-        let msg = `%L${i.toString(16)},${(Date.now() - this.simStartTime).toString(16)}&`;
+        let msg = `%L${transponderId.toString(16)},${(Date.now() - this.simStartTime).toString(16)}&`;
         this.notifyOnMessage(msg);
-        this.fakeDrivers[i] = setTimeout((idx) => this.sendDetection(idx), 15000 + Math.random() * 5001, i);
+        this.simDrivers[transponderId] = setTimeout((idx) => this.simulateDetection(idx), 15000 + Math.random() * 5001, transponderId);
     }
     send(msg) {
         switch (msg) {
