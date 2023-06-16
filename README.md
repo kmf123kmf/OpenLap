@@ -8,6 +8,6 @@ The transponder utilizes the ATtiny85 microcontroller while the detector is base
 
 The detector is compatible with ZRound race management software via serial connection.  (https://www.zround.com/)
 
-There is also stand alone, web based app which connects to the detector via WiFi/WebSocket.  The web app is actually surprisingly capable, but currently lacks certain features such as comprehensive driver and race management. (No classes, heats, qualifiers, etc).  Still, for running individual races or practice sessions it's more than sufficient.
+There is also a stand alone, web based app which connects to the detector via WiFi/WebSocket.  The web app is actually surprisingly capable, but currently lacks certain features such as comprehensive driver and race management. (No classes, heats, qualifiers, etc).  Still, for running individual races or practice sessions it's more than sufficient.
 
 ![OpenLapPreview](https://github.com/kmf123kmf/OpenLap/assets/1772271/fe7bd960-9b2e-4e92-998a-f2950fb2d3ea)
