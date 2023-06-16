@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "removeComments": true,
+        "outFile": "js/openlap.js",
+        "target":"ES2022",
+        "sourceMap":true,
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "include": ["ts/"]
+}
