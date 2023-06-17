@@ -1,4 +1,4 @@
-Mostly functioning web app that connects to a detector via WebSocket or serial.  It implements a completely simulated connection in case no physical detector is available. (Default)
+Mostly functioning web app that connects to a detector via WebSocket or serial.  It also implements a completely simulated connection in case no physical detector is available.
 
 Once loaded, it runs entirely client-side, only communicating with the detector.  Because of this, it can be run directly off the filesystem with no web server required.
 
