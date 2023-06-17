@@ -273,6 +273,15 @@ void setup() {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html);
   });
+    server.on("/js/openlap.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/javscript", openlap_js);
+  });
+    server.on("/css/openlap.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/css", openlap_css);
+  });
+    server.on("/css/pure-min.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/css", puremin_css);
+  });
 
   server.begin();
 
