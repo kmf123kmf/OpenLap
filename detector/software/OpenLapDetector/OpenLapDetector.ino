@@ -39,11 +39,6 @@ AsyncClient *theTcpClient = NULL;
 #define IR_RECEIVE_PIN 15
 #define ENABLE_LED_FEEDBACK 1
 
-/* Serial2 for ZRound */
-#define ZROUND_RX 18
-#define ZROUND_TX 17
-#define ZROUND_BAUD 19200
-
 //#define LOCAL_TRACE_STATE_MACHINE
 #define RCLT_MARK_OFFSET -15
 #include "OpenLapTinyIRReceiver.hpp"
@@ -227,7 +222,6 @@ void setup() {
   }
 
   Serial.begin(115200);
-  Serial2.begin(ZROUND_BAUD, SERIAL_8N1, ZROUND_RX, ZROUND_TX);
 
   /*************************
  *  Initialize display
@@ -364,9 +358,6 @@ void sendMessage(const String &msg) {
     }
     theTcpClient->write(msgBuff);
   }
-
-  Serial2.print(msgBuff);
-  Serial2.flush();
 }
 
 void notifyClients() {
@@ -384,7 +375,6 @@ void notifyClients() {
 uint32_t lastCleanupTime = 0;
 
 void notifyTask(void *parameter) {
-  char buff[3];
   while (true) {
     bool shouldUpdateDisplay = false;
     bool shouldNotifyClients = false;
@@ -398,37 +388,6 @@ void notifyTask(void *parameter) {
           Serial.println(i);
           shouldNotifyClients = true;
         }
-      }
-    }
-
-    // process incoming serial
-    if (Serial2.available()) {
-      buff[2] = Serial2.read();
-      if (buff[0] == '%' && buff[2] == '&') {
-        switch (buff[1]) {
-          case 'C':
-            Serial2.write("%A&");
-            Serial2.flush();
-            Serial.println("ZRound Connected");
-            break;
-          case 'I':
-            InitDetectionOffset();
-            break;
-          case 'F':
-            Serial.println("Race Finished");
-            break;
-          case 'B':
-            beginSim();
-            break;
-          case 'E':
-            endSim();
-            break;
-        }
-        buff[0] = '\0';
-      } else {
-        buff[0] = buff[1];
-        buff[1] = buff[2];
-        buff[2] = '\0';
       }
     }
 

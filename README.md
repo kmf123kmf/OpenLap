@@ -6,7 +6,7 @@ All microcontroller code is written as Arduino sketches.
 
 The transponder utilizes the ATtiny85 microcontroller while the detector is based around the AdaFruit ESP32-S3 TFT Feather dev board. (see https://www.adafruit.com/product/5483)
 
-The detector is compatible with ZRound race management software via serial connection.  (https://www.zround.com/)
+The detector is compatible with ZRound race management software.  (As of ZRound version 1.24.5.2 over TCP/IP. See https://www.zround.com/)
 
 There is also a stand alone, web based app which connects to the detector via WiFi/WebSocket.  The web app is actually surprisingly capable, but currently lacks certain features such as comprehensive driver and race management. (No classes, heats, qualifiers, etc).  Still, for running individual races or practice sessions it's more than sufficient.
 

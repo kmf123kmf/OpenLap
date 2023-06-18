@@ -2226,88 +2226,6 @@ class ZRoundTransformer {
     }
 }
 
-class SerialDetectorConnection extends DetectorConnection {
-    port: any;
-    receivedAck = false;
-    reader: any;
-    writer: any;
-    readableStreamClosed: any;
-    writableStreamClosed: any;
-
-    constructor() {
-        super();
-        this.port = null;
-    }
-
-    connect() {
-        (navigator as any).serial.requestPort().then(async (port) => {
-            await port.open({ baudRate: 19200 });
-            this.port = port;
-            this.isConnected = true;
-            this.notifyOnConnected();
-
-            let textDecoder = new TextDecoderStream();
-            this.readableStreamClosed = this.port.readable.pipeTo(textDecoder.writable);
-            this.reader = textDecoder.readable
-                .pipeThrough(new TransformStream(new ZRoundTransformer()))
-                .getReader();
-
-            let textEncoder = new TextEncoderStream();
-            this.writer = textEncoder.writable.getWriter();
-            this.writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
-
-            await this.send("%C&");
-            setTimeout(() => this.checkForAck(), 750);
-            await this.receiveData();
-        });
-    }
-
-    private checkForAck() {
-        if (!this.receivedAck) {
-            console.log('Ack not found. Disconnecting.');
-            this.disconnect();
-        }
-    }
-
-    private async receiveData() {
-        try {
-            while (true) {
-                let { value, done } = await this.reader.read();
-                if (done) {
-                    break;
-                }
-
-                if (value == '%A&') {
-                    this.receivedAck = true;
-                }
-                else {
-                    console.log(value);
-                    this.notifyOnMessage(value);
-                }
-            }
-        } finally {
-            this.reader.releaseLock();
-        }
-    }
-
-    async disconnect() {
-        this.reader.cancel();
-        await this.readableStreamClosed.catch(() => { });
-
-        this.writer.close();
-        await this.writableStreamClosed;
-
-        await this.port.close();
-        this.isConnected = false;
-        this.notifyOnDisconnected();
-    }
-
-    async send(msg: string) {
-        await this.writer.write(msg);
-        //this.writer.releaseLock();
-    }
-}
-
 class WebSocketDetectorConnection extends DetectorConnection {
     ws = null;
     url: string;
@@ -2475,7 +2393,6 @@ function initDetectorConnection() {
         detectorConnection.onMessage = null;
     }
     //detectorConnection = new WebSocketDetectorConnection(`ws://${host}/ws`);
-    //detectorConnection = new SerialDetectorConnection();
     detectorConnection = new SimulatedConnection();
     detectorConnection.onConnected = onDetectorOpen;
     detectorConnection.onDisconnected = onDetectorClose;
