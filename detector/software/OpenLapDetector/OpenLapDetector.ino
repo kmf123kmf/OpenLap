@@ -110,43 +110,55 @@ void updateDisplay() {
 
 static portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
 
-void InitDetectionOffset() {
-  Serial.println("Init Detector");
+void startRace() {
+  Serial.println(F("Race Started"));
   detectionOffset = millis();
 }
 
 void finishRace() {
-  Serial.println("Finish Race");
+  Serial.println(F("Race Finished"));
 }
 
 void beginSim() {
   for (int i = 0; i < 10; i++) {
-    simTransponders[i] = millis() + random(1000, 2500);
+    simTransponders[i] = millis() + 1000 + random(500, 1500);
   }
 
-  Serial.println("Simulation started");
+  Serial.println(F("Simulation Started"));
   runSim = true;
 }
 
 void endSim() {
-  Serial.println("Simulation stopped");
+  Serial.println(F("Simulation Stopped"));
   runSim = false;
 }
 
+/*
+ *  Handles 3 character messages of the form %X&, where X is the command data
+ *  See https://www.zround.com/wiki/doku.php/lapcounters:protocols:open
+ */
 void handleZRoundMessage(void *data, size_t len) {
   char *msg = (char *)data;
   if (len >= 3 && msg[0] == '%' && msg[2] == '&') {
     switch (msg[1]) {
-      case 'I':
-        InitDetectionOffset();
+      /** 
+      * Per the ZRound protocol %C& should be replied to with an ACK, %A&.
+      * However, when using TCP/IP the ACK is ignored by ZRound, so
+      * it's safe to just do nothing.
+      */
+      case 'C':
+        Serial.println(F("Connected to ZRound"));
         break;
-      case 'B':
+      case 'I': // Race has stared.  Reset detector clock to 0ms.
+        startRace();
+        break;
+      case 'B': // Not a ZRound command.  Used by OpenLap software.
         beginSim();
         break;
-      case 'E':
+      case 'E': // Not a ZRound command. Used by OpenLap software.
         endSim();
         break;
-      case 'F':
+      case 'F': // Race has finished. Supposed to disable sending detections.  Doesn't acutally seem necessary though.
         finishRace();
         break;
     }
@@ -165,7 +177,7 @@ void onTcpClientDisconnect(void *s, AsyncClient *client) {
   client->free();
   delete client;
   theTcpClient = NULL;
-  Serial.print("TCP Client disconnected");
+  Serial.println(F("TCP Client disconnected"));
 }
 
 void onTcpClient(void *s, AsyncClient *client) {
@@ -177,7 +189,7 @@ void onTcpClient(void *s, AsyncClient *client) {
     client->close(true);
     client->free();
     delete client;
-    Serial.println("Refused TCP Client.  A client is already connected.");
+    Serial.println(F("Refused TCP Client.  A client is already connected."));
     return;
   }
 
@@ -187,9 +199,9 @@ void onTcpClient(void *s, AsyncClient *client) {
   client->onData(onTcpClientData);
   client->onDisconnect(onTcpClientDisconnect);
 
-  Serial.print("TCP Client connected from ");
+  Serial.print(F("TCP Client connected from "));
   Serial.print(client->getRemoteAddress());
-  Serial.print(":");
+  Serial.print(F(":"));
   Serial.println(client->getRemotePort());
 }
 
@@ -342,9 +354,8 @@ void setup() {
   initPCIInterruptForTinyReceiver();
 
   /****************************************
- *  Update clients and display
- *  on core0
- ****************************************/
+   * Update clients and display on core0
+   ****************************************/
   xTaskCreatePinnedToCore(notifyTask, "NotifyTask", 10000, NULL, 0, NULL, 0);
 }
 
@@ -364,10 +375,10 @@ void notifyClients() {
   while (!outQueue.isEmpty()) {
     DetectionInfo info = outQueue.dequeue();
 
-    // use the ZRound open protocol
-    String msg = "%L" + String(info.transponderId, HEX) + ","
-                 + String(info.detectionTime, HEX) + "&";
-
+    // Detections formatted in compliance with ZRound Open protocol
+    // See https://www.zround.com/wiki/doku.php/lapcounters:protocols:open
+    String msg = "%L" + String(info.transponderId, HEX) + "," + String(info.detectionTime, HEX) + "&";
+    Serial.println(msg);
     sendMessage(msg);
   }
 }
@@ -384,8 +395,6 @@ void notifyTask(void *parameter) {
         if (millis() > simTransponders[i]) {
           outQueue.enqueue({ i, millis() - detectionOffset });
           simTransponders[i] = millis() + random(13000, 15000) + i * random(0, 200);
-          Serial.print("Sim ID: ");
-          Serial.println(i);
           shouldNotifyClients = true;
         }
       }
