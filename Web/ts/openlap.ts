@@ -2050,6 +2050,13 @@ class RaceManager {
         return 0;
     }
 
+    detectVehicleNumber(num: number) {
+        let v = [...this.vehicles.values()].find((v) => v.number() == num);
+        if(v){
+            this.recordDetection(v.id, Date.now() - this.startDate.getTime());
+        }
+    }
+
     recordDetection(id: number, millis: number) {
         if (this.running === false)
             return;
@@ -2359,6 +2366,27 @@ window.speechSynthesis.onvoiceschanged = (e) => {
 window.onbeforeunload = (e: BeforeUnloadEvent) => {
     e.preventDefault();
     e.returnValue = "Are you sure you want to leave?  Active race will be lost!";
+};
+
+window.onkeydown = (e:KeyboardEvent) =>{
+    if(e.repeat){
+        return;
+    }
+
+    if(!raceManager.running){
+        return;
+    }
+
+    if(byId("sessionPage").style.display == "none"){
+        return;
+    }
+    
+    if(e.key in ["1","2","3","4","5","6","7","8","9","0"])
+    {
+        e.preventDefault();
+        raceManager.detectVehicleNumber(e.key == "0" ? 10 : Number(e.key));
+    }
+        
 };
 
 window.onload = () => {
