@@ -4,7 +4,7 @@
 const char settings_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
-  <title>OpenRC Lap Detector</title>
+  <title>OpenLap Detector Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="data:,">
 </head>
