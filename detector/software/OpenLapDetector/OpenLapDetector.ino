@@ -9,6 +9,7 @@
 #include <AsyncTCP.h>
 #include <ArduinoQueue.h>
 #include "OpenLapHTML.h"
+#include "openlap_gz.h"
 
 #define DISPLAY_WIDTH 240
 #define DISPLAY_HEIGHT 135
@@ -149,16 +150,16 @@ void handleZRoundMessage(void *data, size_t len) {
       case 'C':
         Serial.println(F("Connected to ZRound"));
         break;
-      case 'I': // Race has stared.  Reset detector clock to 0ms.
+      case 'I':  // Race has stared.  Reset detector clock to 0ms.
         startRace();
         break;
-      case 'B': // Not a ZRound command.  Used by OpenLap software.
+      case 'B':  // Not a ZRound command.  Used by OpenLap software.
         beginSim();
         break;
-      case 'E': // Not a ZRound command. Used by OpenLap software.
+      case 'E':  // Not a ZRound command. Used by OpenLap software.
         endSim();
         break;
-      case 'F': // Race has finished. Supposed to disable sending detections.  Doesn't acutally seem necessary though.
+      case 'F':  // Race has finished. Supposed to disable sending detections.  Doesn't acutally seem necessary though.
         finishRace();
         break;
     }
@@ -228,143 +229,12 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
   }
 }
 
-void setup() {
-  for (int i = 0; i < NUM_RECENT_DETECTIONS; i++) {
-    recentDetections[i] = { false, { 0, 0 } };
-  }
-
-  Serial.begin(115200);
-
-  /*************************
- *  Initialize display
- *************************/
-  // turn on backlite
-  pinMode(TFT_BACKLITE, OUTPUT);
-  digitalWrite(TFT_BACKLITE, HIGH);
-
-  // turn on the TFT / I2C power supply
-  pinMode(TFT_I2C_POWER, OUTPUT);
-  digitalWrite(TFT_I2C_POWER, HIGH);
-  delay(10);
-
-  // initialize TFT
-  tft.init(135, 240);  // Init ST7789 240x135
-  tft.setRotation(1);
-  tft.fillScreen(ST77XX_BLACK);
-
-  /****************************************
- *  Join WiFi network or run in AP mode
- ****************************************/
-  WiFi.mode(WIFI_STA);
-
-  // Look for previously stored SSID and passkey
-  preferences.begin(PREF_NS, true);
-  String userSSID = preferences.getString(USSID_KEY);
-  String userPWD = preferences.getString(UPWD_KEY);
-  preferences.end();
-
-  if (userSSID != NULL) {
-    const char *ssid = userSSID.c_str();
-    const char *password = userPWD.c_str();
-    // attempt to join network
-    WiFi.begin(ssid, password);
-
-    // try for ten seconds
-    for (int i = 0; i < 10; i++) {
-      if (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-      }
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-      displaySSID = ssid;
-      displayPWD = "<hidden>";
-      displayAddress = WiFi.localIP().toString();
-    } else {
-    }
-  }
-
-  // Not connect to network.  Create a private network instead.
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(AP_SSID, AP_PWD);
-
-    displaySSID = AP_SSID;
-    displayPWD = AP_PWD;
-    displayAddress = WiFi.softAPIP().toString();
-  }
-
-  /****************************************
- *  Setup the web server
- ****************************************/
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
-
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", settings_html);
-  });
-
-  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("ssid", true)) {
-      AsyncWebParameter *p = request->getParam("ssid", true);
-      preferences.begin(PREF_NS, false);
-      preferences.putString(USSID_KEY, p->value());
-      preferences.end();
-    }
-
-    if (request->hasParam("pwd", true)) {
-      AsyncWebParameter *p = request->getParam("pwd", true);
-      preferences.begin(PREF_NS, false);
-      preferences.putString(UPWD_KEY, p->value());
-      preferences.end();
-    }
-
-    request->send_P(200, "text/plain", "Settings updated.  Please restart device for changes to take effect.");
-  });
-
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", index_html);
-  });
-  server.on("/js/openlap.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/javscript", openlap_js);
-  });
-  server.on("/css/openlap.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/css", openlap_css);
-  });
-  server.on("/css/pure-min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/css", puremin_css);
-  });
-
-  server.begin();
-
-  /****************************************
- *  Setup the tcp server
- ****************************************/
-  tcpServer.onClient(onTcpClient, NULL);
-  tcpServer.begin();
-
-  /****************************************
- *  Display connection info to user
- ****************************************/
-  updateDisplay();
-
-  /****************************************
- *  Setup IR receiving
- ****************************************/
-  initPCIInterruptForTinyReceiver();
-
-  /****************************************
-   * Update clients and display on core0
-   ****************************************/
-  xTaskCreatePinnedToCore(notifyTask, "NotifyTask", 10000, NULL, 0, NULL, 0);
-}
-
 void sendMessage(const String &msg) {
   const char *msgBuff = msg.c_str();
 
   ws.textAll(msg);
   if (theTcpClient != NULL) {
-    while(!theTcpClient->canSend()){
+    while (!theTcpClient->canSend()) {
       delayMicroseconds(50);
     }
     theTcpClient->write(msgBuff);
@@ -479,6 +349,148 @@ void handleReceivedOpenLapIRData(uint16_t transponderId) {
 void displayMessage(const char *msg) {
   dbgMessage = msg;
   updateDisplay();
+}
+
+void setup() {
+  for (int i = 0; i < NUM_RECENT_DETECTIONS; i++) {
+    recentDetections[i] = { false, { 0, 0 } };
+  }
+
+  Serial.begin(115200);
+
+  /*************************
+ *  Initialize display
+ *************************/
+  // turn on backlite
+  pinMode(TFT_BACKLITE, OUTPUT);
+  digitalWrite(TFT_BACKLITE, HIGH);
+
+  // turn on the TFT / I2C power supply
+  pinMode(TFT_I2C_POWER, OUTPUT);
+  digitalWrite(TFT_I2C_POWER, HIGH);
+  delay(10);
+
+  // initialize TFT
+  tft.init(135, 240);  // Init ST7789 240x135
+  tft.setRotation(1);
+  tft.fillScreen(ST77XX_BLACK);
+
+  /****************************************
+ *  Join WiFi network or run in AP mode
+ ****************************************/
+  WiFi.mode(WIFI_STA);
+
+  // Look for previously stored SSID and passkey
+  preferences.begin(PREF_NS, true);
+  String userSSID = preferences.getString(USSID_KEY);
+  String userPWD = preferences.getString(UPWD_KEY);
+  preferences.end();
+
+  if (userSSID != NULL) {
+    const char *ssid = userSSID.c_str();
+    const char *password = userPWD.c_str();
+    // attempt to join network
+    WiFi.begin(ssid, password);
+
+    // try for ten seconds
+    for (int i = 0; i < 10; i++) {
+      if (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+      }
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      displaySSID = ssid;
+      displayPWD = "<hidden>";
+      displayAddress = WiFi.localIP().toString();
+    } else {
+    }
+  }
+
+  // Not connect to network.  Create a private network instead.
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(AP_SSID, AP_PWD);
+
+    displaySSID = AP_SSID;
+    displayPWD = AP_PWD;
+    displayAddress = WiFi.softAPIP().toString();
+  }
+
+  /****************************************
+ *  Setup the web server
+ ****************************************/
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
+
+  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send_P(200, "text/html", settings_html);
+  });
+
+  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (request->hasParam("ssid", true)) {
+      AsyncWebParameter *p = request->getParam("ssid", true);
+      preferences.begin(PREF_NS, false);
+      preferences.putString(USSID_KEY, p->value());
+      preferences.end();
+    }
+
+    if (request->hasParam("pwd", true)) {
+      AsyncWebParameter *p = request->getParam("pwd", true);
+      preferences.begin(PREF_NS, false);
+      preferences.putString(UPWD_KEY, p->value());
+      preferences.end();
+    }
+
+    request->send_P(200, "text/plain", "Settings updated.  Please restart device for changes to take effect.");
+  });
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_htm_gz, index_htm_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
+  server.on("/js/openlap.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/javascript", openlap_js_gz, openlap_js_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
+  server.on("/css/openlap.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", openlap_css_gz, openlap_css_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+  
+  server.on("/css/pure-min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", pure_min_css_gz, pure_min_css_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+  });
+
+  server.begin();
+
+  /****************************************
+ *  Setup the tcp server
+ ****************************************/
+  tcpServer.onClient(onTcpClient, NULL);
+  tcpServer.begin();
+
+  /****************************************
+ *  Display connection info to user
+ ****************************************/
+  updateDisplay();
+
+  /****************************************
+ *  Setup IR receiving
+ ****************************************/
+  initPCIInterruptForTinyReceiver();
+
+  /****************************************
+   * Update clients and display on core0
+   ****************************************/
+  xTaskCreatePinnedToCore(notifyTask, "NotifyTask", 10000, NULL, 0, NULL, 0);
 }
 
 void loop() {
