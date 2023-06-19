@@ -8,7 +8,6 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include <ArduinoQueue.h>
-#include "OpenLapHTML.h"
 #include "openlap_gz.h"
 
 #define DISPLAY_WIDTH 240
@@ -424,7 +423,9 @@ void setup() {
   server.addHandler(&ws);
 
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send_P(200, "text/html", settings_html);
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", settings_htm_gz, settings_htm_gz_len);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
   });
 
   server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
