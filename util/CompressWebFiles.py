@@ -12,7 +12,7 @@ paths = [
     "../web/css/openlap.css",
     "../web/css/pure-min.css",
     "../web/index.htm",
-     "../web/settings.htm",
+    "../web/settings.htm",
     ]
 
 dest = "../detector/software/OpenLapDetector"
