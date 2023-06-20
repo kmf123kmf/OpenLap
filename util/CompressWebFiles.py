@@ -1,6 +1,8 @@
+
 # Gzip's js, css, and htm files and generates
 # PROGMEM byte arrays in cpp header files in the 
 # detector/software/OpenLapDetector directory
+
 
 import sys
 import os
@@ -16,6 +18,7 @@ paths = [
     ]
 
 dest = "../detector/software/OpenLapDetector"
+
 destPath = os.path.join(dest, "openlap_gz.h")
 destDefine = "_openlap_gz_h_"
 
@@ -64,6 +67,7 @@ for path in paths:
 with open(destPath, "w") as f:
     f.write("#ifndef " + destDefine + "\n")
     f.write("#define " + destDefine + "\n")
+
     for n in cppFiles:
         f.write("#include \"" + n + "\"\n")
     f.write("#endif")

@@ -2226,6 +2226,7 @@ class ConnectionController {
 
     initDetectorConnection(hostName: string) {
         if (!hostName || hostName.trim() == '') {
+
             hostName = "SIM";
         }
         this.hostName = hostName.trim().toUpperCase();
@@ -2542,6 +2543,7 @@ function beginSim(e: Event) {
 }
 
 function endSim(e: Event) {
+
     connectionController.connection().send('%E&');
 }
 

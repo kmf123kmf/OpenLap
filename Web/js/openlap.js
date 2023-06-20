@@ -2036,7 +2036,9 @@ window.onload = () => {
 };
 let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'));
+
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
+
 function initDetector() {
     connectionController.connection().send('%I&');
 }
