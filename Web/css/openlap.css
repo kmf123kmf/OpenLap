@@ -13,6 +13,28 @@ body {
     flex-direction: column;
 }
 
+dialog::backdrop{
+    background:black;
+    opacity: 0.6;
+}
+
+dialog{
+    border: 2px solid var(--theme-main-color);
+}
+
+.header {
+    background-color: var(--theme-main-color);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.header button{
+    font-size: 0.7rem;
+    margin-top:4px;
+}
+
 footer {
     background-color: var(--theme-main-color);
     min-height: 10px;
@@ -152,14 +174,6 @@ footer {
 
 .globalStatusContainer {
     font-size: 0.8rem;
-}
-
-.header {
-    background-color: var(--theme-main-color);
-    color: white;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
 }
 
 .raceClock {

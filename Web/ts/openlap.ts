@@ -2052,7 +2052,7 @@ class RaceManager {
 
     detectVehicleNumber(num: number) {
         let v = [...this.vehicles.values()].find((v) => v.number() == num);
-        if(v){
+        if (v) {
             this.recordDetection(v.id, Date.now() - this.startDate.getTime());
         }
     }
@@ -2102,6 +2102,91 @@ class RaceManager {
     }
 }
 
+class ConnectionController {
+    private detectorConnection: DetectorConnection = null;
+    private hostName: string;
+    private connStatusSpan: HTMLSpanElement;
+
+    constructor(
+        configureButton: HTMLButtonElement,
+        dialog: HTMLDialogElement,
+        addressInput: HTMLInputElement,
+        okButton: HTMLButtonElement,
+        statusSpan: HTMLSpanElement) {
+
+        this.connStatusSpan = statusSpan;
+
+        configureButton.addEventListener("click", () => {
+            addressInput.value = this.hostName;
+            dialog.showModal();
+        });
+
+        okButton.addEventListener("click", () => {
+            let address = addressInput.value.toUpperCase().trim();
+            console.log(`Connection address changed to ${address}`);
+
+            if (address == "SIM") {
+                console.log("Changed to simulated detector");
+            }
+            else {
+                console.log(`Detector address changed to ${address}`);
+            }
+
+            this.hostName = address;
+            this.initDetectorConnection(this.hostName);
+            dialog.close();
+        });
+    }
+
+    public connection(): DetectorConnection {
+        return this.detectorConnection;
+    }
+
+    initDetectorConnection(hostName: string) {
+        if(!hostName || hostName.trim() == ''){
+            hostName = "SIM";
+        }
+        this.hostName = hostName.trim().toUpperCase();
+
+        if (this.detectorConnection) {
+            this.detectorConnection.disconnect();
+            this.onDetectorClose();
+            this.detectorConnection.onConnected = null;
+            this.detectorConnection.onDisconnected = null;
+            this.detectorConnection.onMessage = null;
+        }
+
+        if (hostName == 'SIM') {
+            console.log('Using simulated detector connection.');
+            this.detectorConnection = new SimulatedConnection();
+        }
+        else {
+            console.log(`Connecting to detector at %{hostName}`);
+            this.detectorConnection = new WebSocketDetectorConnection(`ws://${hostName}/ws`);
+        }
+
+        this.detectorConnection.onConnected = () => this.onDetectorOpen();
+        this.detectorConnection.onDisconnected = () => this.onDetectorClose();
+        this.detectorConnection.onMessage = onDetectorMessage;
+        console.log('Connecting to detector');
+        this.detectorConnection.connect();
+    }
+
+    onDetectorOpen() {
+        console.log('Connection opened');
+        this.connStatusSpan.textContent = this.hostName == 'SIM' ? 'Simulated' : 'Connected';
+        this.connStatusSpan.classList.add('connected');
+        this.connStatusSpan.classList.remove('disconnected');
+    }
+
+    onDetectorClose() {
+        console.log('Connection closed');
+        this.connStatusSpan.textContent = 'Disconnected';
+        this.connStatusSpan.classList.add('disconnected');
+        this.connStatusSpan.classList.remove('connected');
+    }
+}
+
 class DetectorConnection {
     protected isConnected: boolean;
     onMessage: any;
@@ -2117,7 +2202,7 @@ class DetectorConnection {
 
     send(msg: string) { }
 
-    connect(url: string) { }
+    connect() { }
 
     disconnect() { }
 
@@ -2170,7 +2255,7 @@ class SimulatedConnection extends DetectorConnection {
     }
 
     private simulateDetection(transponderId: number) {
-        if(!this.simRunning){
+        if (!this.simRunning) {
             return;
         }
 
@@ -2195,7 +2280,7 @@ class SimulatedConnection extends DetectorConnection {
         }
     }
 
-    connect(url: string) {
+    connect() {
         this.isConnected = true;
         this.notifyOnConnected();
     }
@@ -2203,26 +2288,6 @@ class SimulatedConnection extends DetectorConnection {
     disconnect() {
         this.isConnected = false;
         this.notifyOnDisconnected();
-    }
-}
-
-class ZRoundTransformer {
-    chunks: string = "";
-
-    transform(chunk: string, controller: any) {
-        this.chunks += chunk;
-
-        let lines = this.chunks.split("&");
-        this.chunks = lines.pop();
-        for (let line of lines) {
-            if (line.length > 0 && line.at(0) == '%') {
-                controller.enqueue(line + "&");
-            }
-        }
-    }
-
-    flush(controller: any) {
-        controller.enqueue(this.chunks);
     }
 }
 
@@ -2235,7 +2300,7 @@ class WebSocketDetectorConnection extends DetectorConnection {
         this.url = url;
     }
 
-    connect(url: string) {
+    connect() {
         if (this.ws) {
             this.ws.onopen = null;
             this.ws.onclose = null;
@@ -2286,25 +2351,23 @@ window.onbeforeunload = (e: BeforeUnloadEvent) => {
     e.returnValue = "Are you sure you want to leave?  Active race will be lost!";
 };
 
-window.onkeydown = (e:KeyboardEvent) =>{
-    if(e.repeat){
+window.onkeydown = (e: KeyboardEvent) => {
+    if (e.repeat) {
         return;
     }
 
-    if(!raceManager.running){
+    if (!raceManager.running) {
         return;
     }
 
-    if(byId("sessionPage").style.display == "none"){
+    if (byId("sessionPage").style.display == "none") {
         return;
     }
-    
-    if(e.key in ["1","2","3","4","5","6","7","8","9","0"])
-    {
+
+    if (e.key in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]) {
         e.preventDefault();
         raceManager.detectVehicleNumber(e.key == "0" ? 10 : Number(e.key));
     }
-        
 };
 
 window.onload = () => {
@@ -2313,7 +2376,6 @@ window.onload = () => {
         byId("infoBoard") as HTMLDivElement,
         byId("raceSplitter") as HTMLDivElement);
 
-    //initDetectorConnection();
     let buttons = document.querySelectorAll(".tabsHeader > button:nth-child(1)");
     for (let b of buttons) {
         selectTabPage(b as HTMLElement);
@@ -2351,7 +2413,17 @@ window.onload = () => {
         byId('leaderToneVolumeRange') as HTMLInputElement,
         byId('leaderToneFadeNone') as HTMLInputElement,
         byId('leaderToneFadeLin') as HTMLInputElement);
+
+    connectionController.initDetectorConnection(window.location.hostname);
 };
+
+let connectionController = new ConnectionController(
+    byId("configureConnectionButton") as HTMLButtonElement,
+    byId("connectionDialog") as HTMLDialogElement,
+    byId("detectorAddressInput") as HTMLInputElement,
+    byId("connectionDialogOkButton") as HTMLButtonElement,
+    byId("connStatusSpan") as HTMLSpanElement,
+);
 
 let driverManager = new DriverManager(
     byId('driverNameInput') as HTMLInputElement,
@@ -2378,56 +2450,16 @@ let raceManager = new RaceManager(
     byId("clearDriversButton") as HTMLButtonElement
 );
 
-let detectorConnection = null;
-
-function initDetectorConnection() {
-    let host = window.location.hostname;
-    if (host === '') {
-        console.log('hostname is blank.  Trying 192.168.1.62');
-        host = '192.168.1.62';
-    }
-    if (detectorConnection) {
-        detectorConnection.disconnect();
-        detectorConnection.onConnected = null;
-        detectorConnection.onDisconnected = null;
-        detectorConnection.onMessage = null;
-    }
-    //detectorConnection = new WebSocketDetectorConnection(`ws://${host}/ws`);
-    detectorConnection = new SimulatedConnection();
-    detectorConnection.onConnected = onDetectorOpen;
-    detectorConnection.onDisconnected = onDetectorClose;
-    detectorConnection.onMessage = onDetectorMessage;
-    console.log('Trying to open connection to detector...');
-    detectorConnection.connect();
-}
-
-function onDetectorOpen() {
-    console.log('Connection opened');
-    let e = byId('connStatus');
-    e.textContent = 'Connected';
-    e.classList.add('connected');
-    e.classList.remove('disconnected');
-}
-
-function onDetectorClose() {
-    console.log('Connection closed');
-    let e = byId('connStatus');
-    e.textContent = 'Disconnected';
-    e.classList.add('disconnected');
-    e.classList.remove('connected');
-    setTimeout(initDetectorConnection, 500);
-}
-
 function initDetector() {
-    detectorConnection.send('%I&');
+    connectionController.connection().send('%I&');
 }
 
-function beginSim() {
-    detectorConnection.send('%B&');
+function beginSim(e:Event) {
+    connectionController.connection().send('%B&');
 }
 
-function endSim() {
-    detectorConnection.send('%E&');
+function endSim(e:Event) {
+    connectionController.connection().send('%E&');
 }
 
 function onDetectorMessage(msg: string) {
@@ -2441,8 +2473,6 @@ function onDetectorMessage(msg: string) {
             let id = parseInt(msg.slice(2, end), 16);
             let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
             handleDetection(id, millis);
-            break;
-        case 'A':
             break;
         default:
             break;
