@@ -19,7 +19,8 @@ dialog::backdrop{
 }
 
 dialog{
-    border: 2px solid var(--theme-main-color);
+    border: 3px solid var(--theme-main-color);
+    box-shadow: 3px 3px 5px #535353;
 }
 
 .header {
