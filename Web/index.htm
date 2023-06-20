@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html>
+
 <head>
   <title>OpenLap</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +12,21 @@
 </head>
 
 <body>
+  <dialog id="connectionDialog">
+    <form class="pure-form pure-form-aligned">
+      <fieldset>
+        <div class="pure-control-group">
+          <label for="detectorAddressInput">Detector Address</label>
+          <input id="detectorAddressInput" type="text" placeholder="IP Address or &quot;SIM&quot;"/>
+        </div>
+        <div class="pure-controls">
+          <button id="connectionDialogOkButton" class="pure-button pure-button-primary" formmethod="dialog" value="default">OK</button>
+          <button class="pure-button" formmethod="dialog" value="cancel">Cancel</button>
+        </div>
+      </fieldset>
+    </form>
+  </dialog>
+
   <div class="header">
     <div>
       <span class="titleText">OpenLap 0.1a</span>
@@ -18,16 +34,16 @@
     <div class="globalStatusContainer">
       <div>
         <span>Connection Status: </span>
-        <span id="connStatus">Disconnected</span>
+        <span id="connStatusSpan">Disconnected</span>
       </div>
       <div>
         <span>Last Detection: </span>
         <span id="lastDetectionId">-</span>
       </div>
       <div>
-        <button onclick="initDetectorConnection()">Connect</button>
-        <button onclick="beginSim()">Begin Sim</button>
-        <button onclick="endSim()">End Sim</button>
+        <button id="configureConnectionButton">Configure</button>
+        <button onclick="beginSim()">Start Sim</button>
+        <button onclick="endSim()">Stop Sim</button>
       </div>
     </div>
   </div>
@@ -211,7 +227,7 @@ Race is Over.</textarea>
           <input type="number" min="0" max="999" id="driverTransponderIdInput" value="0" />
           <button class="pure-button" id="useLastButton">Use Last</button>
         </div>
-        <div>
+        <div class="pure-controls">
           <button class="pure-button" id="addDriverButton">Add Driver</button>
         </div>
       </fieldset>
