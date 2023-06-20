@@ -1420,6 +1420,7 @@ class RaceManager {
     localOffset: number = 0;
     trackSession: TrackSession;
     updateSessionInterval: number = null;
+    startButton: HTMLButtonElement;
     scoreBoardTable: HTMLTableElement;
     timeControlSelect: HTMLSelectElement;
     timeControlInput: HTMLInputElement;
@@ -1548,6 +1549,7 @@ class RaceManager {
     }
 
     initStartButton(button: HTMLButtonElement) {
+        this.startButton = button;
         button.addEventListener("click", this.toggleRace.bind(this));
     }
 
@@ -1630,7 +1632,7 @@ class RaceManager {
                 if(!this.startPending){
                     return;
                 }
-                
+
                 let d = 1000;
                 if (i < this.startDelay && i % 10 == 0 && i > 10) {
                     AudioController.speak(`${i} seconds`);
@@ -1658,6 +1660,8 @@ class RaceManager {
         this.setSessionMode();
         this.leaderBoard = [];
         this.resetSideBoard();
+
+        this.resetVehicles();
         this.trackSession.initVehicles();
 
         this.localOffset = 0;
@@ -1698,6 +1702,7 @@ class RaceManager {
         document.querySelectorAll(".raceDisabled").forEach((e) => (e as any).disabled = false);
         document.querySelectorAll('.scoreBoard [draggable="false"]').forEach((e) => (e as any).setAttribute('draggable', 'true'));
         console.log("Session Stopped");
+        this.startButton.textContent = "Start";
     }
 
     allVehiclesFinished(): boolean {
@@ -1710,13 +1715,12 @@ class RaceManager {
     }
 
     toggleRace(e: Event) {
-        let btn = e.target as HTMLButtonElement;
         if (this.running || this.startPending) {
             this.stopRace();
-            btn.textContent = "Start";
+            this.startButton.textContent = "Start";
         }
         else if (!this.startPending) {
-            btn.textContent = "Stop";
+            this.startButton.textContent = "Stop";
             this.startRace();
         }
 
@@ -2046,7 +2050,7 @@ class RaceManager {
         // remove from laps board
         this.lapsBoardDiv.querySelector(`div[carNumber="${v.number()}"]`)?.remove();
         if (this.lapsBoardDiv.querySelectorAll('.carNumberColumn').length == 0) {
-            this.lapsBoardDiv.querySelector("div .lapNumberColumn").remove();
+            this.lapsBoardDiv.querySelector("div .lapNumberColumn")?.remove();
         }
     }
 

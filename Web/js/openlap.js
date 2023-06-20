@@ -1157,6 +1157,7 @@ class RaceManager {
     localOffset = 0;
     trackSession;
     updateSessionInterval = null;
+    startButton;
     scoreBoardTable;
     timeControlSelect;
     timeControlInput;
@@ -1248,6 +1249,7 @@ class RaceManager {
         }
     }
     initStartButton(button) {
+        this.startButton = button;
         button.addEventListener("click", this.toggleRace.bind(this));
     }
     initModes() {
@@ -1343,6 +1345,7 @@ class RaceManager {
         this.setSessionMode();
         this.leaderBoard = [];
         this.resetSideBoard();
+        this.resetVehicles();
         this.trackSession.initVehicles();
         this.localOffset = 0;
         this.positionGraph.clear();
@@ -1376,6 +1379,7 @@ class RaceManager {
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = false);
         document.querySelectorAll('.scoreBoard [draggable="false"]').forEach((e) => e.setAttribute('draggable', 'true'));
         console.log("Session Stopped");
+        this.startButton.textContent = "Start";
     }
     allVehiclesFinished() {
         for (let v of this.vehicles.values()) {
@@ -1386,13 +1390,12 @@ class RaceManager {
         return true;
     }
     toggleRace(e) {
-        let btn = e.target;
         if (this.running || this.startPending) {
             this.stopRace();
-            btn.textContent = "Start";
+            this.startButton.textContent = "Start";
         }
         else if (!this.startPending) {
-            btn.textContent = "Stop";
+            this.startButton.textContent = "Stop";
             this.startRace();
         }
     }
@@ -1680,7 +1683,7 @@ class RaceManager {
     removeVehicleFromSideBoard(v) {
         this.lapsBoardDiv.querySelector(`div[carNumber="${v.number()}"]`)?.remove();
         if (this.lapsBoardDiv.querySelectorAll('.carNumberColumn').length == 0) {
-            this.lapsBoardDiv.querySelector("div .lapNumberColumn").remove();
+            this.lapsBoardDiv.querySelector("div .lapNumberColumn")?.remove();
         }
     }
     resetSideBoard() {
