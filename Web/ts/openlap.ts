@@ -1715,6 +1715,7 @@ class RaceManager {
     }
 
     toggleRace(e: Event) {
+
         if (this.running || this.startPending) {
             this.stopRace();
             this.startButton.textContent = "Start";
