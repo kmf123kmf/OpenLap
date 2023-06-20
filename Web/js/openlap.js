@@ -862,6 +862,7 @@ class RunningStat {
 }
 class Vehicle {
     isNew = true;
+    isStaging = false;
     scoreBoardRow = null;
     progressBarDiv = null;
     progressTimeSpan = null;
@@ -936,6 +937,10 @@ class Vehicle {
             this.lastSeen = millis;
             return VehicleUpdateResult.FalseDetection;
         }
+        if (this.isStaging) {
+            this.lastSeen == millis;
+            return VehicleUpdateResult.ValidDetection;
+        }
         this.detectionCount++;
         if (!this.clockIsRunning()) {
             this.startClock(millis);
@@ -973,6 +978,7 @@ class TrackSession {
     ignoreUnregisteredTransponderIds;
     usePositionGraph;
     displayName;
+    isStaging = false;
     constructor(raceManager) {
         this.raceManager = raceManager;
         this.ignoreUnregisteredTransponderIds = true;
@@ -983,6 +989,7 @@ class TrackSession {
             v.timeControl = this.raceManager.timeControl;
             v.isNew = false;
             v.alive = true;
+            v.isStaging = this.isStaging;
             v.clockStart = null;
             this.raceManager.updateScoreBoard(v);
         }
@@ -1040,17 +1047,6 @@ class OpenPractice extends PracticeSession {
         }
     }
 }
-class ClosedPractice extends PracticeSession {
-    static displayName = "Closed Practice";
-    static allowLapTimeControl = false;
-    constructor(raceManager) {
-        super(raceManager);
-        this.displayName = ClosedPractice.displayName;
-    }
-    announceStart() {
-        AudioController.speak('Practice session started');
-    }
-}
 class RaceSession extends TrackSession {
     constructor(raceManager) {
         super(raceManager);
@@ -1084,6 +1080,23 @@ class RaceSession extends TrackSession {
                 this.raceManager.updateScoreBoard(v);
             }
         }
+    }
+}
+class StagingSession extends RaceSession {
+    static displayName = "Staging";
+    static allowLapTimeControl = false;
+    constructor(raceManager) {
+        super(raceManager);
+        this.displayName = StagingSession.displayName;
+        this.isStaging = true;
+        this.ignoreUnregisteredTransponderIds = false;
+    }
+    announceStart() {
+        AudioController.speak("All drivers, check in", false, true);
+    }
+    announceFinished() {
+    }
+    announceExpired() {
     }
 }
 class StaggeredStartRace extends RaceSession {
@@ -1135,6 +1148,7 @@ class TimeControlBuilder {
     }
 }
 class RaceManager {
+    startPending = false;
     timeControl = null;
     vehicles = new Map();
     driverManager;
@@ -1153,9 +1167,10 @@ class RaceManager {
     expired;
     positionGraph = null;
     dragSource = null;
+    startDelay = 0;
     sessionModeBuilders = [
         new TrackSessionBuilder(OpenPractice.displayName, OpenPractice.allowLapTimeControl, (rm) => new OpenPractice(rm)),
-        new TrackSessionBuilder(ClosedPractice.displayName, ClosedPractice.allowLapTimeControl, (rm) => new ClosedPractice(rm)),
+        new TrackSessionBuilder(StagingSession.displayName, StagingSession.allowLapTimeControl, (rm) => new StagingSession(rm)),
         new TrackSessionBuilder(StaggeredStartRace.displayName, StaggeredStartRace.allowLapTimeControl, (rm) => new StaggeredStartRace(rm)),
         new TrackSessionBuilder(GridStartRace.displayName, GridStartRace.allowLapTimeControl, (rm) => new GridStartRace(rm))
     ];
@@ -1165,13 +1180,14 @@ class RaceManager {
     ];
     leaderBoard = [];
     scoreBoardColumns = [];
-    constructor(driverManager, startButton, modeSelect, timeControlSelect, timeControlInput, elapsedTimeDiv, remainingTimeDiv, scoreBoardTable, lapsBoardDiv, positionGraphDiv, addDriversButton, resetDriversButton, clearDriversButton) {
+    constructor(driverManager, startButton, modeSelect, timeControlSelect, timeControlInput, elapsedTimeDiv, remainingTimeDiv, scoreBoardTable, lapsBoardDiv, positionGraphDiv, addDriversButton, resetDriversButton, clearDriversButton, startDelaySelect) {
         modeSelect.classList.add("raceDisabled");
         timeControlSelect.classList.add("raceDisabled");
         timeControlInput.classList.add("raceDisabled");
         addDriversButton.classList.add("raceDisabled");
         resetDriversButton.classList.add("raceDisabled");
         clearDriversButton.classList.add("raceDisabled");
+        startDelaySelect.classList.add("raceDisabled");
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
         this.trackSession = new OpenPractice(this);
@@ -1187,9 +1203,15 @@ class RaceManager {
         this.scoreBoardTable = scoreBoardTable;
         this.readScoreBoardColumns();
         this.lapsBoardDiv = lapsBoardDiv;
+        this.startDelay = Number(startDelaySelect.selectedOptions[0].value);
+        startDelaySelect.addEventListener("change", () => {
+            this.startDelay = Number(startDelaySelect.selectedOptions[0].value);
+            console.log(`Start Delay changed to ${this.startDelay} seconds`);
+        });
         this.sessionModeChanged();
     }
     initDriverButtons(addDriversButton, resetDriversButton, clearDriversButton) {
+        addDriversButton.addEventListener("click", () => alert('Not implemented'));
         clearDriversButton.addEventListener("click", () => this.clearVehicles());
         resetDriversButton.addEventListener("click", () => this.resetVehicles());
     }
@@ -1285,18 +1307,53 @@ class RaceManager {
     getLocalMillis() {
         return Date.now() - this.startDate.getTime();
     }
-    startRace() {
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async delayStart() {
+        if (this.startDelay > 0) {
+            if (this.startDelay > 10) {
+                AudioController.speak(`${this.startDelay} seconds to the start of the race`, true, true);
+            }
+            for (let i = this.startDelay; i > 0; i--) {
+                if (!this.startPending) {
+                    return;
+                }
+                let d = 1000;
+                if (i < this.startDelay && i % 10 == 0 && i > 10) {
+                    AudioController.speak(`${i} seconds`);
+                }
+                else if (i <= 10 && i > 5) {
+                    AudioController.speak(String(i));
+                }
+                else if (i == 5) {
+                    AudioController.speak("Less than 5");
+                }
+                if (i <= 5) {
+                    d = Math.random() * 1001;
+                    console.log(d);
+                }
+                await this.sleep(d);
+            }
+        }
+    }
+    async startRace() {
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = true);
         document.querySelectorAll('.scoreBoard [draggable="true"]').forEach((e) => e.setAttribute('draggable', 'false'));
         this.setSessionMode();
         this.leaderBoard = [];
         this.resetSideBoard();
         this.trackSession.initVehicles();
-        initDetector();
-        this.startDate = new Date();
         this.localOffset = 0;
         this.positionGraph.clear();
         this.timeControl.reset(0);
+        this.startPending = true;
+        await this.delayStart();
+        if (!this.startPending) {
+            return;
+        }
+        initDetector();
+        this.startDate = new Date();
         this.trackSession.announceStart();
         this.running = true;
         this.expired = false;
@@ -1308,6 +1365,7 @@ class RaceManager {
         console.log("Session Started");
     }
     stopRace() {
+        this.startPending = false;
         clearInterval(this.updateSessionInterval);
         this.trackSession.postInitVehicles();
         if (!this.expired) {
@@ -1329,11 +1387,11 @@ class RaceManager {
     }
     toggleRace(e) {
         let btn = e.target;
-        if (this.running) {
+        if (this.running || this.startPending) {
             this.stopRace();
             btn.textContent = "Start";
         }
-        else {
+        else if (!this.startPending) {
             btn.textContent = "Stop";
             this.startRace();
         }
@@ -1714,6 +1772,7 @@ class RaceManager {
                 vehicle = this.addVehicle(id);
                 vehicle.isNew = false;
                 vehicle.alive = true;
+                vehicle.isStaging = this.trackSession.isStaging;
             }
             else {
                 console.log("Ignored unregistered transponder id");
@@ -1977,7 +2036,7 @@ window.onload = () => {
 };
 let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'));
-let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("resetDriversButton"), byId("clearDriversButton"));
+let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
     connectionController.connection().send('%I&');
 }
