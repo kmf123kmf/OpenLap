@@ -1,5 +1,6 @@
 :root {
     --theme-main-color: darkslateblue;
+    --theme-background-color: white;
     --document-padding: 5px;
 }
 
@@ -11,11 +12,11 @@ body {
     min-height: calc(100vh - calc((var(--document-padding) * 2)));
     display: flex;
     flex-direction: column;
+    background: var(--theme-background-color);
 }
 
 dialog::backdrop {
-    background: black;
-    opacity: 0.6;
+    background-color: rgb(0, 0, 0, 0.5);
 }
 
 dialog {
@@ -24,8 +25,57 @@ dialog {
     box-shadow: 3px 3px 5px #535353;
 }
 
-dialog input{
-    margin-right:15px;
+dialog[open] {
+    animation: showDialog 0.3s ease-in-out normal;
+}
+
+@keyframes showDialog {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+dialog.hiding {
+    animation: hideDialog 0.3s ease-in-out normal;
+}
+
+@keyframes hideDialog {
+    to {
+        opacity: 0;
+    }
+}
+
+dialog[open]::backdrop {
+    animation: showBackdrop 0.3s linear normal;
+}
+
+@keyframes showBackdrop {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+dialog.hiding::backdrop {
+    animation: hideBackdrop 0.3s linear normal;
+}
+
+@keyframes hideBackdrop {
+    to {
+        opacity: 0;
+    }
+}
+
+
+dialog input {
+    margin-right: 15px;
 }
 
 #registerDriversDialog {

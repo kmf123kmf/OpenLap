@@ -1,3 +1,27 @@
+class DialogAnimator {
+    d: HTMLDialogElement;
+    clickHandler: any;
+
+    constructor(dialog: HTMLDialogElement) {
+        this.d = dialog;
+        this.clickHandler = this.closeDialog.bind(this);
+
+        dialog.querySelectorAll(".closer").forEach((closer) => {
+            closer.addEventListener("click", (e) => {
+                e.preventDefault();
+                this.d.classList.add("hiding");
+                this.d.addEventListener("animationend", this.clickHandler);
+            });
+        });
+    }
+
+    closeDialog(e: Event) {
+        this.d.classList.remove("hiding");
+        this.d.close();
+        this.d.removeEventListener("animationend", this.clickHandler);
+    }
+}
+
 class HorizontalResizer {
     leftPane: HTMLDivElement;
     rightPane: HTMLDivElement;
@@ -679,7 +703,7 @@ class DriverManager {
         }
     }
 
-    getDrivers(){
+    getDrivers() {
         return [...this.driverList];
     }
 
@@ -1479,7 +1503,8 @@ class RaceManager {
         startDelaySelect.classList.add("raceDisabled");
 
         this.driversDialog = driversDialog;
-        this.driversDialog.querySelector(".closeX")?.addEventListener("click", ()=>this.driversDialog.close());
+        
+        new DialogAnimator(this.driversDialog);
 
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
@@ -1514,40 +1539,40 @@ class RaceManager {
         resetDriversButton.addEventListener("click", () => this.resetVehicles());
     }
 
-    private registerDrivers(){
+    private registerDrivers() {
         let table = this.driversDialog.querySelector("table");
         empty(table.tBodies[0]);
 
         let allDrivers = this.driverManager.getDrivers();
-        for(let d of allDrivers){
+        for (let d of allDrivers) {
             let row = makeTr();
             row.appendChild(makeTd(d.i));
             row.appendChild(makeTd(d.n));
 
             let check: HTMLInputElement = makeElement("input") as HTMLInputElement;
-            check.addEventListener("click",(e:Event)=> e.preventDefault());
+            check.addEventListener("click", (e: Event) => e.preventDefault());
 
-            check.setAttribute("type","checkbox");
+            check.setAttribute("type", "checkbox");
             row.append(makeTd(check));
             table.tBodies[0].appendChild(row);
 
-            row.addEventListener("click", ()=>{
-                if(row.classList.contains("registeredDriverRow")){
+            row.addEventListener("click", () => {
+                if (row.classList.contains("registeredDriverRow")) {
                     row.classList.remove("registeredDriverRow");
                     check.checked = false;
                     let v = this.vehicles.get(Number(d.i));
-                    if(v){
+                    if (v) {
                         this.removeVehicle(v);
                     }
                 }
-                else{
+                else {
                     row.classList.add("registeredDriverRow");
                     check.checked = true;
                     this.addVehicle(Number(d.i), new Driver(d.n, d.s));
                 }
             });
 
-            if(this.vehicles.has(Number(d.i))){
+            if (this.vehicles.has(Number(d.i))) {
                 row.classList.add("registeredDriverRow");
                 check.checked = true;
             }
@@ -1680,7 +1705,7 @@ class RaceManager {
             }
 
             for (let i = this.startDelay; i > 0; i--) {
-                if(!this.startPending){
+                if (!this.startPending) {
                     return;
                 }
 
@@ -1722,7 +1747,7 @@ class RaceManager {
         this.startPending = true;
         await this.delayStart();
 
-        if(!this.startPending){
+        if (!this.startPending) {
             return;
         }
 
@@ -2254,8 +2279,6 @@ class ConnectionController {
 
         this.connStatusSpan = statusSpan;
 
-        dialog.querySelector(".closeX")?.addEventListener("click", ()=> dialog.close());
-
         configureButton.addEventListener("click", () => {
             addressInput.value = this.hostName;
             dialog.showModal();
@@ -2274,9 +2297,9 @@ class ConnectionController {
 
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
-
-            dialog.close();
         });
+
+        new DialogAnimator(dialog);
     }
 
     public connection(): DetectorConnection {

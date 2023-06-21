@@ -1,3 +1,23 @@
+class DialogAnimator {
+    d;
+    clickHandler;
+    constructor(dialog) {
+        this.d = dialog;
+        this.clickHandler = this.closeDialog.bind(this);
+        dialog.querySelectorAll(".closer").forEach((closer) => {
+            closer.addEventListener("click", (e) => {
+                e.preventDefault();
+                this.d.classList.add("hiding");
+                this.d.addEventListener("animationend", this.clickHandler);
+            });
+        });
+    }
+    closeDialog(e) {
+        this.d.classList.remove("hiding");
+        this.d.close();
+        this.d.removeEventListener("animationend", this.clickHandler);
+    }
+}
 class HorizontalResizer {
     leftPane;
     rightPane;
@@ -1194,7 +1214,7 @@ class RaceManager {
         clearDriversButton.classList.add("raceDisabled");
         startDelaySelect.classList.add("raceDisabled");
         this.driversDialog = driversDialog;
-        this.driversDialog.querySelector(".closeX")?.addEventListener("click", () => this.driversDialog.close());
+        new DialogAnimator(this.driversDialog);
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
         this.trackSession = new OpenPractice(this);
@@ -1851,7 +1871,6 @@ class ConnectionController {
     connStatusSpan;
     constructor(configureButton, dialog, addressInput, okButton, statusSpan) {
         this.connStatusSpan = statusSpan;
-        dialog.querySelector(".closeX")?.addEventListener("click", () => dialog.close());
         configureButton.addEventListener("click", () => {
             addressInput.value = this.hostName;
             dialog.showModal();
@@ -1867,8 +1886,8 @@ class ConnectionController {
             }
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
-            dialog.close();
         });
+        new DialogAnimator(dialog);
     }
     connection() {
         return this.detectorConnection;
