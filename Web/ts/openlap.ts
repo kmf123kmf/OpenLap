@@ -1479,6 +1479,7 @@ class RaceManager {
         startDelaySelect.classList.add("raceDisabled");
 
         this.driversDialog = driversDialog;
+        this.driversDialog.querySelector(".closeX")?.addEventListener("click", ()=>this.driversDialog.close());
 
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
@@ -2252,6 +2253,8 @@ class ConnectionController {
         statusSpan: HTMLSpanElement) {
 
         this.connStatusSpan = statusSpan;
+
+        dialog.querySelector(".closeX")?.addEventListener("click", ()=> dialog.close());
 
         configureButton.addEventListener("click", () => {
             addressInput.value = this.hostName;

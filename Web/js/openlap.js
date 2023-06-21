@@ -1194,6 +1194,7 @@ class RaceManager {
         clearDriversButton.classList.add("raceDisabled");
         startDelaySelect.classList.add("raceDisabled");
         this.driversDialog = driversDialog;
+        this.driversDialog.querySelector(".closeX")?.addEventListener("click", () => this.driversDialog.close());
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
         this.trackSession = new OpenPractice(this);
@@ -1850,6 +1851,7 @@ class ConnectionController {
     connStatusSpan;
     constructor(configureButton, dialog, addressInput, okButton, statusSpan) {
         this.connStatusSpan = statusSpan;
+        dialog.querySelector(".closeX")?.addEventListener("click", () => dialog.close());
         configureButton.addEventListener("click", () => {
             addressInput.value = this.hostName;
             dialog.showModal();
