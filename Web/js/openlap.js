@@ -542,6 +542,9 @@ class DriverManager {
             AudioController.speak(name, true);
         }
     }
+    getDrivers() {
+        return [...this.driverList];
+    }
     loadDrivers() {
         let data = window.localStorage.getItem("driverData");
         if (data) {
@@ -1165,6 +1168,7 @@ class RaceManager {
     remainingTimeDiv;
     modeSelect;
     lapsBoardDiv;
+    driversDialog;
     expired;
     positionGraph = null;
     dragSource = null;
@@ -1181,7 +1185,7 @@ class RaceManager {
     ];
     leaderBoard = [];
     scoreBoardColumns = [];
-    constructor(driverManager, startButton, modeSelect, timeControlSelect, timeControlInput, elapsedTimeDiv, remainingTimeDiv, scoreBoardTable, lapsBoardDiv, positionGraphDiv, addDriversButton, resetDriversButton, clearDriversButton, startDelaySelect) {
+    constructor(driverManager, startButton, modeSelect, timeControlSelect, timeControlInput, elapsedTimeDiv, remainingTimeDiv, scoreBoardTable, lapsBoardDiv, positionGraphDiv, addDriversButton, driversDialog, resetDriversButton, clearDriversButton, startDelaySelect) {
         modeSelect.classList.add("raceDisabled");
         timeControlSelect.classList.add("raceDisabled");
         timeControlInput.classList.add("raceDisabled");
@@ -1189,6 +1193,7 @@ class RaceManager {
         resetDriversButton.classList.add("raceDisabled");
         clearDriversButton.classList.add("raceDisabled");
         startDelaySelect.classList.add("raceDisabled");
+        this.driversDialog = driversDialog;
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
         this.trackSession = new OpenPractice(this);
@@ -1212,9 +1217,44 @@ class RaceManager {
         this.sessionModeChanged();
     }
     initDriverButtons(addDriversButton, resetDriversButton, clearDriversButton) {
-        addDriversButton.addEventListener("click", () => alert('Not implemented'));
+        addDriversButton.addEventListener("click", () => this.registerDrivers());
         clearDriversButton.addEventListener("click", () => this.clearVehicles());
         resetDriversButton.addEventListener("click", () => this.resetVehicles());
+    }
+    registerDrivers() {
+        let table = this.driversDialog.querySelector("table");
+        empty(table.tBodies[0]);
+        let allDrivers = this.driverManager.getDrivers();
+        for (let d of allDrivers) {
+            let row = makeTr();
+            row.appendChild(makeTd(d.i));
+            row.appendChild(makeTd(d.n));
+            let check = makeElement("input");
+            check.addEventListener("click", (e) => e.preventDefault());
+            check.setAttribute("type", "checkbox");
+            row.append(makeTd(check));
+            table.tBodies[0].appendChild(row);
+            row.addEventListener("click", () => {
+                if (row.classList.contains("registeredDriverRow")) {
+                    row.classList.remove("registeredDriverRow");
+                    check.checked = false;
+                    let v = this.vehicles.get(Number(d.i));
+                    if (v) {
+                        this.removeVehicle(v);
+                    }
+                }
+                else {
+                    row.classList.add("registeredDriverRow");
+                    check.checked = true;
+                    this.addVehicle(Number(d.i), new Driver(d.n, d.s));
+                }
+            });
+            if (this.vehicles.has(Number(d.i))) {
+                row.classList.add("registeredDriverRow");
+                check.checked = true;
+            }
+        }
+        this.driversDialog.showModal();
     }
     clearVehicles() {
         if (this.running) {
@@ -2039,7 +2079,7 @@ window.onload = () => {
 };
 let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'));
-let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
+let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
     connectionController.connection().send('%I&');
 }

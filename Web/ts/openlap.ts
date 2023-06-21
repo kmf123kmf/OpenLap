@@ -679,6 +679,10 @@ class DriverManager {
         }
     }
 
+    getDrivers(){
+        return [...this.driverList];
+    }
+
     loadDrivers() {
         let data = window.localStorage.getItem("driverData");
         if (data) {
@@ -1428,6 +1432,7 @@ class RaceManager {
     remainingTimeDiv: HTMLDivElement;
     modeSelect: HTMLSelectElement;
     lapsBoardDiv: HTMLDivElement;
+    driversDialog: HTMLDialogElement;
     expired: boolean;
     positionGraph: PositionGraph = null;
     dragSource = null;
@@ -1460,6 +1465,7 @@ class RaceManager {
         lapsBoardDiv: HTMLDivElement,
         positionGraphDiv: HTMLDivElement,
         addDriversButton: HTMLButtonElement,
+        driversDialog: HTMLDialogElement,
         resetDriversButton: HTMLButtonElement,
         clearDriversButton: HTMLButtonElement,
         startDelaySelect: HTMLSelectElement) {
@@ -1471,6 +1477,8 @@ class RaceManager {
         resetDriversButton.classList.add("raceDisabled");
         clearDriversButton.classList.add("raceDisabled");
         startDelaySelect.classList.add("raceDisabled");
+
+        this.driversDialog = driversDialog;
 
         this.positionGraph = new PositionGraph(positionGraphDiv);
         this.driverManager = driverManager;
@@ -1500,9 +1508,51 @@ class RaceManager {
     }
 
     initDriverButtons(addDriversButton: HTMLButtonElement, resetDriversButton: HTMLButtonElement, clearDriversButton: HTMLButtonElement) {
-        addDriversButton.addEventListener("click", () => alert('Not implemented'));
+        addDriversButton.addEventListener("click", () => this.registerDrivers());
         clearDriversButton.addEventListener("click", () => this.clearVehicles());
         resetDriversButton.addEventListener("click", () => this.resetVehicles());
+    }
+
+    private registerDrivers(){
+        let table = this.driversDialog.querySelector("table");
+        empty(table.tBodies[0]);
+
+        let allDrivers = this.driverManager.getDrivers();
+        for(let d of allDrivers){
+            let row = makeTr();
+            row.appendChild(makeTd(d.i));
+            row.appendChild(makeTd(d.n));
+
+            let check: HTMLInputElement = makeElement("input") as HTMLInputElement;
+            check.addEventListener("click",(e:Event)=> e.preventDefault());
+
+            check.setAttribute("type","checkbox");
+            row.append(makeTd(check));
+            table.tBodies[0].appendChild(row);
+
+            row.addEventListener("click", ()=>{
+                if(row.classList.contains("registeredDriverRow")){
+                    row.classList.remove("registeredDriverRow");
+                    check.checked = false;
+                    let v = this.vehicles.get(Number(d.i));
+                    if(v){
+                        this.removeVehicle(v);
+                    }
+                }
+                else{
+                    row.classList.add("registeredDriverRow");
+                    check.checked = true;
+                    this.addVehicle(Number(d.i), new Driver(d.n, d.s));
+                }
+            });
+
+            if(this.vehicles.has(Number(d.i))){
+                row.classList.add("registeredDriverRow");
+                check.checked = true;
+            }
+        }
+
+        this.driversDialog.showModal();
     }
 
     clearVehicles() {
@@ -2221,6 +2271,7 @@ class ConnectionController {
 
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
+
             dialog.close();
         });
     }
@@ -2534,6 +2585,7 @@ let raceManager = new RaceManager(
     byId('lapsBoardDiv') as HTMLDivElement,
     byId("positionGraphDiv") as HTMLDivElement,
     byId("addDriversButton") as HTMLButtonElement,
+    byId("registerDriversDialog") as HTMLDialogElement,
     byId("resetDriversButton") as HTMLButtonElement,
     byId("clearDriversButton") as HTMLButtonElement,
     byId("startDelaySelect") as HTMLSelectElement

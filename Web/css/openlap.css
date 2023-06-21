@@ -13,14 +13,39 @@ body {
     flex-direction: column;
 }
 
-dialog::backdrop{
-    background:black;
+dialog::backdrop {
+    background: black;
     opacity: 0.6;
 }
 
-dialog{
+dialog {
     border: 3px solid var(--theme-main-color);
     box-shadow: 3px 3px 5px #535353;
+}
+
+#registerDriversDialog {
+    max-height: 600px;
+    overflow-y: auto;
+    padding:20px;
+}
+
+#registerDriversDialog table {
+    font-size: 90%;
+
+}
+
+#registerDriversDialog table tbody tr:hover {
+    cursor: pointer;
+    filter:brightness(85%);
+    color: black;
+}
+
+#registerDriversDialog table tbody tr td:nth-child(3){
+    text-align:center;
+}
+
+.registeredDriverRow{
+    background-color: lightgreen;
 }
 
 .header {
@@ -31,9 +56,9 @@ dialog{
     justify-content: space-between;
 }
 
-.header button{
+.header button {
     font-size: 0.7rem;
-    margin-top:4px;
+    margin-top: 4px;
 }
 
 footer {
@@ -139,9 +164,9 @@ footer {
     padding: 2px;
 }
 
-.scoreBoard [draggable="true"]{
+.scoreBoard [draggable="true"] {
     user-select: none;
-    cursor:grab;
+    cursor: grab;
 }
 
 .vehicleFinished {
@@ -296,7 +321,7 @@ footer {
 }
 
 .pure-button.driverManagerButton {
-    margin-left:5px;
+    margin-left: 5px;
 }
 
 .positionGraphContainer {
