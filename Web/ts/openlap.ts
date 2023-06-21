@@ -683,7 +683,9 @@ class DriverManager {
         testSpeechButton: HTMLButtonElement,
         idInput: HTMLInputElement,
         addButton: HTMLButtonElement,
-        driverTable: HTMLTableElement) {
+        driverTable: HTMLTableElement,
+        importButton: HTMLInputElement,
+        exportButton: HTMLButtonElement) {
 
         this.nameInput = nameInput;
         this.spokenInput = spokenInput;
@@ -692,6 +694,47 @@ class DriverManager {
 
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
         testSpeechButton.addEventListener("click", () => this.testDriverSpeech(this.nameInput.value.trim(), this.spokenInput.value.trim()));
+    
+        importButton.addEventListener("change", (e)=> this.importDrivers(e));
+        exportButton.addEventListener("click", ()=> this.exportDrivers());
+    }
+
+    private importDrivers(e){
+        let json: string = null;
+        let file = (e.target as HTMLInputElement).files[0];
+        let reader = new FileReader();
+        reader.addEventListener("load", (event)=>{
+            json = event.target.result as string;
+            try{
+                let newData = [];
+                let data = JSON.parse(json);
+                for(let d of data){
+                    if(!d.hasOwnProperty('i') || !d.hasOwnProperty('n') || !d.hasOwnProperty('s')){
+                        throw new Error("Failed to parse driver file data");
+                    }
+
+                    newData.push({d: d.i, n: d.n, s: d.s});
+                }
+
+                console.log(newData);
+            }
+            catch{
+                console.log('Failed to load drivers file');
+            }
+        });
+        reader.readAsText(file);
+        alert('Not implemented');
+    }
+
+    private exportDrivers(){
+        let d = new Date();
+        let filename = `OpenLap_Drivers_${d.getFullYear()}-${d.getMonth()}-${d.getDay()}_${d.getHours()}.${d.getMinutes()}.json`;
+        let data = JSON.stringify(this.driverList, null, 2);
+        const blob = new Blob([data]);
+        const link = makeElement("a") as HTMLAnchorElement;
+        link.download = filename;
+        link.href = window.URL.createObjectURL(blob);
+        link.click();
     }
 
     private testDriverSpeech(name: string, spoken: string) {
@@ -2596,7 +2639,9 @@ let driverManager = new DriverManager(
     byId('driverTestSpeechButton') as HTMLButtonElement,
     byId('driverTransponderIdInput') as HTMLInputElement,
     byId('addDriverButton') as HTMLButtonElement,
-    byId('driversTable') as HTMLTableElement
+    byId('driversTable') as HTMLTableElement,
+    byId('importDriversInput') as HTMLInputElement,
+    byId('exportDriversButton') as HTMLButtonElement,
 );
 
 let raceManager = new RaceManager(

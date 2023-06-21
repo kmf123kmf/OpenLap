@@ -546,13 +546,49 @@ class DriverManager {
     idInput;
     driverTable;
     driverList = [];
-    constructor(nameInput, spokenInput, testSpeechButton, idInput, addButton, driverTable) {
+    constructor(nameInput, spokenInput, testSpeechButton, idInput, addButton, driverTable, importButton, exportButton) {
         this.nameInput = nameInput;
         this.spokenInput = spokenInput;
         this.idInput = idInput;
         this.driverTable = driverTable;
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
         testSpeechButton.addEventListener("click", () => this.testDriverSpeech(this.nameInput.value.trim(), this.spokenInput.value.trim()));
+        importButton.addEventListener("change", (e) => this.importDrivers(e));
+        exportButton.addEventListener("click", () => this.exportDrivers());
+    }
+    importDrivers(e) {
+        let json = null;
+        let file = e.target.files[0];
+        let reader = new FileReader();
+        reader.addEventListener("load", (event) => {
+            json = event.target.result;
+            try {
+                let newData = [];
+                let data = JSON.parse(json);
+                for (let d of data) {
+                    if (!d.hasOwnProperty('i') || !d.hasOwnProperty('n') || !d.hasOwnProperty('s')) {
+                        throw new Error("Failed to parse driver file data");
+                    }
+                    newData.push({ d: d.i, n: d.n, s: d.s });
+                }
+                console.log(newData);
+            }
+            catch {
+                console.log('Failed to load drivers file');
+            }
+        });
+        reader.readAsText(file);
+        alert('Not implemented');
+    }
+    exportDrivers() {
+        let d = new Date();
+        let filename = `OpenLap_Drivers_${d.getFullYear()}-${d.getMonth()}-${d.getDay()}_${d.getHours()}.${d.getMinutes()}.json`;
+        let data = JSON.stringify(this.driverList, null, 2);
+        const blob = new Blob([data]);
+        const link = makeElement("a");
+        link.download = filename;
+        link.href = window.URL.createObjectURL(blob);
+        link.click();
     }
     testDriverSpeech(name, spoken) {
         if (spoken?.length > 0) {
@@ -2099,7 +2135,7 @@ window.onload = () => {
     connectionController.initDetectorConnection(window.location.hostname);
 };
 let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
-let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'));
+let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversInput'), byId('exportDriversButton'));
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
     connectionController.connection().send('%I&');
