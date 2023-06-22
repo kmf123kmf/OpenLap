@@ -16,7 +16,7 @@ body {
 }
 
 input[type="file"] {
-    display:none;
+    display: none;
 }
 
 dialog::backdrop {
@@ -106,7 +106,13 @@ dialog input {
     background-color: lightgreen;
 }
 
+.pure-table th{
+    background:var(--theme-main-color);
+    color:white;
+}
+
 .dialogHeader {
+    user-select: none;
     font-size: 0.9rem;
     display: flex;
     flex-direction: row;
@@ -126,14 +132,40 @@ dialog input {
 .header {
     background-color: var(--theme-main-color);
     color: white;
-    padding: 15px;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     display: flex;
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
 }
 
 .header button {
     font-size: 0.7rem;
     margin-top: 4px;
+}
+
+.addDriverRow {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.addDriverRow>div {
+    display: flex;
+    flex-direction: column;
+    margin:7px;
+}
+
+.addDriverRow>div:nth-last-child(1){
+    flex-direction:row;
+}
+
+.addDriverRow button{
+    margin-left:5px;
+    margin-right:5px;
 }
 
 footer {
@@ -271,6 +303,7 @@ footer {
 
 .titleText {
     font-size: 1.5rem;
+    margin-right:15px;
 }
 
 .globalStatusContainer {
@@ -315,6 +348,10 @@ footer {
 
 .driverTable {
     width: 100%;
+}
+
+.driverTable th {
+    user-select: none;
 }
 
 .settingSlider {
@@ -364,14 +401,13 @@ footer {
 
 .scoreBoardRightPane {
     position: relative;
-    padding-left: 10px;
     overflow-x: auto;
     flex: 1 1 10rem;
 }
 
 .gutter {
     height: 100%;
-    width: 10px;
+    width: 12px;
     cursor: col-resize;
 }
 

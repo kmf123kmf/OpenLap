@@ -486,7 +486,10 @@ function makeOpt(content) {
     return makeElement("option", content);
 }
 function selectTabPage(e) {
-    e.parentElement.parentElement.querySelectorAll(":scope > div.tabPage").forEach((div) => div.style.display = "none");
+    e.parentElement.querySelectorAll(":scope>button")
+        .forEach((btn) => {
+        byId(btn.getAttribute("page")).style.display = "none";
+    });
     byId(e.getAttribute("page")).style.display = "block";
     e.parentElement.querySelectorAll("button").forEach((bt) => bt.classList.remove("pure-button-active"));
     e.classList.add("pure-button-active");
@@ -547,7 +550,6 @@ class DriverManager {
     noteInput;
     driverTable;
     driverList = [];
-
     constructor(nameInput, spokenInput, testSpeechButton, idInput, noteInput, addButton, driverTable, importButton, exportButton) {
         this.nameInput = nameInput;
         this.spokenInput = spokenInput;
@@ -2140,7 +2142,7 @@ window.onload = () => {
     new HorizontalResizer(byId("driverBoard"), byId("infoBoard"), byId("raceSplitter"));
     let buttons = document.querySelectorAll(".tabsHeader > button:nth-child(1)");
     for (let b of buttons) {
-        selectTabPage(b);
+        b.click();
     }
     driverManager.loadDrivers();
     AppSettings.initMinLapTime(byId('minLapTimeInput'));

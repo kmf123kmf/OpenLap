@@ -605,7 +605,10 @@ function makeOpt(content?: string | HTMLElement): HTMLOptionElement {
 }
 
 function selectTabPage(e: HTMLElement) {
-    e.parentElement.parentElement.querySelectorAll(":scope > div.tabPage").forEach((div) => (div as HTMLDivElement).style.display = "none");
+    e.parentElement.querySelectorAll(":scope>button")
+        .forEach((btn) =>{
+            (byId(btn.getAttribute("page")) as HTMLDivElement).style.display = "none";
+        });
     (byId(e.getAttribute("page")) as HTMLDivElement).style.display = "block";
     e.parentElement.querySelectorAll("button").forEach((bt) => bt.classList.remove("pure-button-active"));
     e.classList.add("pure-button-active");
@@ -2611,7 +2614,7 @@ window.onload = () => {
 
     let buttons = document.querySelectorAll(".tabsHeader > button:nth-child(1)");
     for (let b of buttons) {
-        selectTabPage(b as HTMLElement);
+        (b as HTMLButtonElement).click();
     }
     driverManager.loadDrivers();
 

@@ -58,8 +58,15 @@
   </dialog>
 
   <div class="header">
-    <div>
-      <span class="titleText">OpenLap 0.1a</span>
+    <div style="display:flex; flex-direction: row;"">
+      <div>
+        <span class="titleText">OpenLap 0.2a</span>
+      </div>
+      <div class="pure-button-group tabsHeader" role="toolbar">
+        <button class="pure-button" page="sessionPage" onclick="selectTabPage(this)">Race</button>
+        <button class="pure-button" page="driversPage" onclick="selectTabPage(this)">Drivers</button>
+        <button class="pure-button" page="optionsPage" onclick="selectTabPage(this)">Settings</button>
+      </div>
     </div>
     <div class="globalStatusContainer">
       <div>
@@ -76,11 +83,6 @@
         <button onclick="endSim()">Stop Sim</button>
       </div>
     </div>
-  </div>
-  <div class="pure-button-group tabsHeader" role="toolbar">
-    <button class="pure-button" page="sessionPage" onclick="selectTabPage(this)">Race</button>
-    <button class="pure-button" page="driversPage" onclick="selectTabPage(this)">Drivers</button>
-    <button class="pure-button pure-button-active" page="optionsPage" onclick="selectTabPage(this)">Settings</button>
   </div>
   <!-- Settings -->
   <div id="optionsPage" class="tabPage">
@@ -241,30 +243,28 @@ Race is Over.</textarea>
   </div>
   <!-- Drivers -->
   <div id="driversPage" class="tabPage">
-    <div class="pure-form pure-form-aligned">
-      <fieldset>
-        <div class="pure-control-group">
-          <label for="driverTransponderIdInput">Transponder ID</label>
-          <input type="number" min="0" max="999" id="driverTransponderIdInput" value="0" />
-          <button class="pure-button" id="useLastButton">Use Last</button>
-        </div>
-        <div class="pure-control-group">
-          <label for="driverNameInput">Name</label>
-          <input type="text" id="driverNameInput" required="" />
-        </div>
-        <div class="pure-control-group">
-          <label for="driverSpokenNameInput">Spoken Name</label>
-          <input type="text" id="driverSpokenNameInput" placeholder="If different than name" />
-          <button class="pure-button" id="driverTestSpeechButton">Test</button>
-        </div>
-        <div class="pure-control-group">
-          <label for="driverNoteInput">Note</label>
-          <input type="text" id="driverNoteInput" placeholder="Car name, etc." />
-        </div>
-        <div class="pure-controls">
-          <button class="pure-button" id="addDriverButton">Add Driver</button>
-        </div>
-      </fieldset>
+    <div class="pure-form addDriverRow">
+      <div>
+        <label for="driverTransponderIdInput">Transponder ID</label>
+        <input type="number" min="0" max="999" id="driverTransponderIdInput" value="0" />
+      </div>
+      <div>
+        <label for="driverNameInput">Name</label>
+        <input type="text" id="driverNameInput" required="" />
+      </div>
+      <div>
+        <label for="driverSpokenNameInput">Spoken Name</label>
+        <input type="text" id="driverSpokenNameInput" placeholder="If different than name" />
+      </div>
+      <div>
+        <label for="driverNoteInput">Note</label>
+        <input type="text" id="driverNoteInput" placeholder="Car name, etc." />
+      </div>
+      <div>
+        <button class="pure-button" id="driverTestSpeechButton">Test</button>
+        <button class="pure-button" id="addDriverButton">Add Driver</button>
+      </div>
+
     </div>
     <div>
       <table class="pure-table pure-table-horizontal" id="driversTable">
