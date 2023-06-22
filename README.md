@@ -10,4 +10,6 @@ The detector is compatible with ZRound race management software.  (As of ZRound 
 
 There is also a stand alone, web based app which connects to the detector via WiFi/WebSocket.  The web app is actually surprisingly capable, but currently lacks certain features such as comprehensive driver and race management. (No classes, heats, qualifiers, etc).  Still, for running individual races or practice sessions it's more than sufficient.
 
-![OpenLapPreview](https://github.com/kmf123kmf/OpenLap/assets/1772271/fe7bd960-9b2e-4e92-998a-f2950fb2d3ea)
+![Screenshot 2023-06-22 121155](https://github.com/kmf123kmf/OpenLap/assets/1772271/707c32a1-6f7e-48ce-ac59-f330b93b84c3)
+
+
