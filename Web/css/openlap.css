@@ -15,6 +15,10 @@ body {
     background: var(--theme-background-color);
 }
 
+input[type="file"] {
+    display:none;
+}
+
 dialog::backdrop {
     background-color: rgb(0, 0, 0, 0.5);
 }

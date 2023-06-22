@@ -684,7 +684,7 @@ class DriverManager {
         idInput: HTMLInputElement,
         addButton: HTMLButtonElement,
         driverTable: HTMLTableElement,
-        importButton: HTMLInputElement,
+        importButton: HTMLButtonElement,
         exportButton: HTMLButtonElement) {
 
         this.nameInput = nameInput;
@@ -695,7 +695,14 @@ class DriverManager {
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
         testSpeechButton.addEventListener("click", () => this.testDriverSpeech(this.nameInput.value.trim(), this.spokenInput.value.trim()));
     
-        importButton.addEventListener("change", (e)=> this.importDrivers(e));
+        let uploadInput = makeElement("input");
+        uploadInput.setAttribute("type","file");
+        uploadInput.setAttribute("accept", ".json");
+        uploadInput.style.display = "none";
+        uploadInput.addEventListener("change", (e)=> this.importDrivers(e));
+        document.body.appendChild(uploadInput);
+
+        importButton.addEventListener("click", ()=>uploadInput.click());
         exportButton.addEventListener("click", ()=> this.exportDrivers());
     }
 
@@ -706,24 +713,14 @@ class DriverManager {
         reader.addEventListener("load", (event)=>{
             json = event.target.result as string;
             try{
-                let newData = [];
                 let data = JSON.parse(json);
-                for(let d of data){
-                    if(!d.hasOwnProperty('i') || !d.hasOwnProperty('n') || !d.hasOwnProperty('s')){
-                        throw new Error("Failed to parse driver file data");
-                    }
-
-                    newData.push({d: d.i, n: d.n, s: d.s});
-                }
-
-                console.log(newData);
+                this.setDriverList(data);
             }
             catch{
                 console.log('Failed to load drivers file');
             }
         });
         reader.readAsText(file);
-        alert('Not implemented');
     }
 
     private exportDrivers(){
@@ -750,6 +747,11 @@ class DriverManager {
         return [...this.driverList];
     }
 
+    private clearTable(){
+        let tbody: HTMLTableSectionElement = this.driverTable.querySelector('tbody');
+        empty(tbody);
+    }
+
     loadDrivers() {
         let data = window.localStorage.getItem("driverData");
         if (data) {
@@ -757,15 +759,29 @@ class DriverManager {
                 console.log("Read driverData string: " + data);
                 let saved = JSON.parse(data);
                 console.log("Loaded " + saved.length + " drivers");
-                this.driverList = saved;
-                for (let d of this.driverList) {
-                    this.addDriver(d.i, d.n, d.s);
-                }
+                this.setDriverList(saved);
             }
             catch {
                 console.log("Failed to load drivers from local storage");
             }
         }
+    }
+
+    private setDriverList(list: any[]){
+        for(let d of list){
+            if(!d.hasOwnProperty("i") || !d.hasOwnProperty("n") || !d.hasOwnProperty("s")){
+                alert('Could not import driver list');
+                return;
+            }
+        }
+
+        this.clearTable();
+        for (let d of list) {
+            this.addDriver(d.i, d.n, d.s);
+        }
+
+        this.driverList = list;
+        this.saveDrivers();
     }
 
     lookupDriver(id: number): Driver {
@@ -2640,7 +2656,7 @@ let driverManager = new DriverManager(
     byId('driverTransponderIdInput') as HTMLInputElement,
     byId('addDriverButton') as HTMLButtonElement,
     byId('driversTable') as HTMLTableElement,
-    byId('importDriversInput') as HTMLInputElement,
+    byId('importDriversButton') as HTMLButtonElement,
     byId('exportDriversButton') as HTMLButtonElement,
 );
 
