@@ -60,29 +60,29 @@
   <div class="header">
     <div style="display:flex; flex-direction: row;"">
       <div>
-        <span class="titleText">OpenLap 0.2a</span>
-      </div>
-      <div class="pure-button-group tabsHeader" role="toolbar">
-        <button class="pure-button" page="sessionPage" onclick="selectTabPage(this)">Race</button>
-        <button class="pure-button" page="driversPage" onclick="selectTabPage(this)">Drivers</button>
-        <button class="pure-button" page="optionsPage" onclick="selectTabPage(this)">Settings</button>
-      </div>
+        <span class=" titleText">OpenLap 0.2a</span>
     </div>
-    <div class="globalStatusContainer">
-      <div>
-        <span>Connection Status: </span>
-        <span id="connStatusSpan">Disconnected</span>
-      </div>
-      <div>
-        <span>Last Detection: </span>
-        <span id="lastDetectionId">-</span>
-      </div>
-      <div>
-        <button id="configureConnectionButton">Configure</button>
-        <button onclick="beginSim()">Start Sim</button>
-        <button onclick="endSim()">Stop Sim</button>
-      </div>
+    <div class="pure-button-group tabsHeader" role="toolbar">
+      <button class="pure-button" page="sessionPage" onclick="selectTabPage(this)">Race</button>
+      <button class="pure-button" page="driversPage" onclick="selectTabPage(this)">Drivers</button>
+      <button class="pure-button" page="optionsPage" onclick="selectTabPage(this)">Settings</button>
     </div>
+  </div>
+  <div class="globalStatusContainer">
+    <div>
+      <span>Connection Status: </span>
+      <span id="connStatusSpan">Disconnected</span>
+    </div>
+    <div>
+      <span>Last Detection: </span>
+      <span id="lastDetectionId">-</span>
+    </div>
+    <div>
+      <button id="configureConnectionButton">Configure</button>
+      <button onclick="beginSim()">Start Sim</button>
+      <button onclick="endSim()">Stop Sim</button>
+    </div>
+  </div>
   </div>
   <!-- Settings -->
   <div id="optionsPage" class="tabPage">
@@ -287,23 +287,25 @@ Race is Over.</textarea>
   </div>
   <!-- Race  -->
   <div id="sessionPage" class="tabPage">
-    <label for="modeSelect">Mode</label>
-    <select id="modeSelect"></select>
-    <label for="timeControlInput">Time Control</label>
-    <input type="number" id="timeControlInput" min="0" max="600" value="0" />
-    <select id="timeControlSelect">
-    </select>
-    <button class="pure-button" id="startButton">Start</button>
+    <div class="sessionSettings">
+      <label for="modeSelect">Mode</label>
+      <select id="modeSelect"></select>
+      <label for="timeControlInput">Time Control</label>
+      <input type="number" id="timeControlInput" min="0" max="600" value="0" />
+      <select id="timeControlSelect">
+      </select>
+      <button class="pure-button" id="startButton">Start</button>
 
-    <label>Delay</label>
-    <select id="startDelaySelect">
-      <option value="0" selected>0</option>
-      <option value="5">5</option>
-      <option value="10">10</option>
-      <option value="20">20</option>
-      <option value="30">30</option>
-    </select>
-    <label>seconds</label>
+      <label>Delay</label>
+      <select id="startDelaySelect">
+        <option value="0" selected>0</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
+      </select>
+      <label>seconds</label>
+    </div>
 
     <div style="display:inline-block; margin-left:50px;">
       <button id="addDriversButton" class="pure-button">Register Drivers</button>
