@@ -98,7 +98,7 @@ dialog input {
     color: black;
 }
 
-#registerDriversDialog table tbody tr td:nth-child(3) {
+#registerDriversDialog table tbody tr td:nth-last-child(1) {
     text-align: center;
 }
 

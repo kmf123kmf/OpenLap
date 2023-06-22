@@ -15,20 +15,20 @@
   <dialog id="connectionDialog">
     <div class="dialogHeader">
       <div>Configure Connection</div>
-      <svg viewbox="0 0 12 12" class="closeX closer" version="1.1"
-           xmlns="http://www.w3.org/2000/svg" height="90%">
-          <line x1="1" y1="11" x2="11" y2="1" />
-          <line x1="1" y1="1" x2="11" y2="11" />
+      <svg viewbox="0 0 12 12" class="closeX closer" version="1.1" xmlns="http://www.w3.org/2000/svg" height="90%">
+        <line x1="1" y1="11" x2="11" y2="1" />
+        <line x1="1" y1="1" x2="11" y2="11" />
       </svg>
     </div>
     <form class="pure-form pure-form-aligned">
       <fieldset>
         <div class="pure-control-group">
           <label for="detectorAddressInput">Detector Address</label>
-          <input id="detectorAddressInput" type="text" placeholder="IP Address or &quot;SIM&quot;"/>
+          <input id="detectorAddressInput" type="text" placeholder="IP Address or &quot;SIM&quot;" />
         </div>
         <div class="pure-controls">
-          <button id="connectionDialogOkButton" class="pure-button pure-button-primary closer" formmethod="dialog" value="default">OK</button>
+          <button id="connectionDialogOkButton" class="pure-button pure-button-primary closer" formmethod="dialog"
+            value="default">OK</button>
           <button class="pure-button closer" formmethod="dialog" value="cancel">Cancel</button>
         </div>
       </fieldset>
@@ -38,10 +38,9 @@
   <dialog id="registerDriversDialog">
     <div class="dialogHeader">
       <div>Register Drivers</div>
-      <svg viewbox="0 0 12 12" class="closeX closer" version="1.1"
-           xmlns="http://www.w3.org/2000/svg" height="90%">
-          <line x1="1" y1="11" x2="11" y2="1" />
-          <line x1="1" y1="1" x2="11" y2="11" />
+      <svg viewbox="0 0 12 12" class="closeX closer" version="1.1" xmlns="http://www.w3.org/2000/svg" height="90%">
+        <line x1="1" y1="11" x2="11" y2="1" />
+        <line x1="1" y1="1" x2="11" y2="11" />
       </svg>
     </div>
     <table class="pure-table pure-table-horizontal">
@@ -49,6 +48,7 @@
         <tr>
           <th>ID</th>
           <th>Name</th>
+          <th>Note</th>
           <th>Registered</th>
         </tr>
       </thead>
@@ -244,18 +244,22 @@ Race is Over.</textarea>
     <div class="pure-form pure-form-aligned">
       <fieldset>
         <div class="pure-control-group">
-          <label for="driverNameInput">Name</label>
-          <input type="text" id="driverNameInput" />
-        </div>
-        <div class="pure-control-group">
-          <label for="driverSpokenNameInput">Spoken Name</label>
-          <input type="text" id="driverSpokenNameInput" />
-          <button class="pure-button" id="driverTestSpeechButton">Test</button>
-        </div>
-        <div class="pure-control-group">
           <label for="driverTransponderIdInput">Transponder ID</label>
           <input type="number" min="0" max="999" id="driverTransponderIdInput" value="0" />
           <button class="pure-button" id="useLastButton">Use Last</button>
+        </div>
+        <div class="pure-control-group">
+          <label for="driverNameInput">Name</label>
+          <input type="text" id="driverNameInput" required="" />
+        </div>
+        <div class="pure-control-group">
+          <label for="driverSpokenNameInput">Spoken Name</label>
+          <input type="text" id="driverSpokenNameInput" placeholder="If different than name" />
+          <button class="pure-button" id="driverTestSpeechButton">Test</button>
+        </div>
+        <div class="pure-control-group">
+          <label for="driverNoteInput">Note</label>
+          <input type="text" id="driverNoteInput" placeholder="Car name, etc." />
         </div>
         <div class="pure-controls">
           <button class="pure-button" id="addDriverButton">Add Driver</button>
@@ -269,6 +273,7 @@ Race is Over.</textarea>
             <th>Transponder ID</th>
             <th>Name</th>
             <th>Spoken Name</th>
+            <th>Note</th>
             <th>Actions</th>
           </tr>
         </thead>

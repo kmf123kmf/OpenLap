@@ -666,15 +666,17 @@ class AudioController {
 }
 
 interface DriverManagerEntry {
-    i: string,
-    n: string,
-    s: string;
+    i: string, // transponder id
+    n: string, // name
+    s: string; // spoken name
+    t: string; // note ie: vehicle description, etc.
 }
 
 class DriverManager {
     nameInput: HTMLInputElement;
     spokenInput: HTMLInputElement;
     idInput: HTMLInputElement;
+    noteInput: HTMLInputElement;
     driverTable: HTMLTableElement;
     driverList: DriverManagerEntry[] = [];
 
@@ -682,6 +684,7 @@ class DriverManager {
         spokenInput: HTMLInputElement,
         testSpeechButton: HTMLButtonElement,
         idInput: HTMLInputElement,
+        noteInput: HTMLInputElement,
         addButton: HTMLButtonElement,
         driverTable: HTMLTableElement,
         importButton: HTMLButtonElement,
@@ -690,6 +693,7 @@ class DriverManager {
         this.nameInput = nameInput;
         this.spokenInput = spokenInput;
         this.idInput = idInput;
+        this.noteInput = noteInput;
         this.driverTable = driverTable;
 
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
@@ -777,7 +781,7 @@ class DriverManager {
 
         this.clearTable();
         for (let d of list) {
-            this.addDriver(d.i, d.n, d.s);
+            this.addDriver(d.i, d.n, d.s, d.t || '');
         }
 
         this.driverList = list;
@@ -801,13 +805,14 @@ class DriverManager {
         window.localStorage.setItem("driverData", data);
     }
 
-    addDriver(id: string, name: string, spoken: string) {
+    addDriver(id: string, name: string, spoken: string, note: string) {
         let tbody: HTMLTableSectionElement = this.driverTable.querySelector('tbody');
         let tr: HTMLTableRowElement = makeTr();
 
         tr.appendChild(makeTd(String(id)));
         tr.appendChild(makeTd(name));
         tr.appendChild(makeTd(spoken));
+        tr.appendChild(makeTd(note));
 
         let delBtn = makeButton('Delete');
         delBtn.classList.add('pure-button', 'driverManagerButton');
@@ -839,12 +844,14 @@ class DriverManager {
         let name = this.nameInput.value.trim();
         let spoken = this.spokenInput.value.trim();
         let id = this.idInput.value.trim();
+        let note = this.noteInput.value.trim();
+
         if (this.driverList.find((d) => d.i.trim() == id.trim())) {
             window.alert("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
             return;
         }
-        this.addDriver(id, name, spoken);
-        this.driverList.push({ i: id, n: name, s: spoken });
+        this.addDriver(id, name, spoken, note);
+        this.driverList.push({ i: id, n: name, s: spoken, t: note });
         this.saveDrivers();
     }
 
@@ -1607,11 +1614,13 @@ class RaceManager {
             let row = makeTr();
             row.appendChild(makeTd(d.i));
             row.appendChild(makeTd(d.n));
+            row.appendChild(makeTd(d.t));
 
             let check: HTMLInputElement = makeElement("input") as HTMLInputElement;
-            check.addEventListener("click", (e: Event) => e.preventDefault());
 
             check.setAttribute("type", "checkbox");
+            check.style.pointerEvents = "none";
+
             row.append(makeTd(check));
             table.tBodies[0].appendChild(row);
 
@@ -2654,6 +2663,7 @@ let driverManager = new DriverManager(
     byId('driverSpokenNameInput') as HTMLInputElement,
     byId('driverTestSpeechButton') as HTMLButtonElement,
     byId('driverTransponderIdInput') as HTMLInputElement,
+    byId('driverNoteInput') as HTMLInputElement,
     byId('addDriverButton') as HTMLButtonElement,
     byId('driversTable') as HTMLTableElement,
     byId('importDriversButton') as HTMLButtonElement,

@@ -544,12 +544,14 @@ class DriverManager {
     nameInput;
     spokenInput;
     idInput;
+    noteInput;
     driverTable;
     driverList = [];
-    constructor(nameInput, spokenInput, testSpeechButton, idInput, addButton, driverTable, importButton, exportButton) {
+    constructor(nameInput, spokenInput, testSpeechButton, idInput, noteInput, addButton, driverTable, importButton, exportButton) {
         this.nameInput = nameInput;
         this.spokenInput = spokenInput;
         this.idInput = idInput;
+        this.noteInput = noteInput;
         this.driverTable = driverTable;
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
         testSpeechButton.addEventListener("click", () => this.testDriverSpeech(this.nameInput.value.trim(), this.spokenInput.value.trim()));
@@ -626,7 +628,7 @@ class DriverManager {
         }
         this.clearTable();
         for (let d of list) {
-            this.addDriver(d.i, d.n, d.s);
+            this.addDriver(d.i, d.n, d.s, d.t || '');
         }
         this.driverList = list;
         this.saveDrivers();
@@ -646,12 +648,13 @@ class DriverManager {
         console.log("Saving Drivers:" + data);
         window.localStorage.setItem("driverData", data);
     }
-    addDriver(id, name, spoken) {
+    addDriver(id, name, spoken, note) {
         let tbody = this.driverTable.querySelector('tbody');
         let tr = makeTr();
         tr.appendChild(makeTd(String(id)));
         tr.appendChild(makeTd(name));
         tr.appendChild(makeTd(spoken));
+        tr.appendChild(makeTd(note));
         let delBtn = makeButton('Delete');
         delBtn.classList.add('pure-button', 'driverManagerButton');
         delBtn.addEventListener('click', this.handleDeleteDriver.bind(this));
@@ -676,12 +679,13 @@ class DriverManager {
         let name = this.nameInput.value.trim();
         let spoken = this.spokenInput.value.trim();
         let id = this.idInput.value.trim();
+        let note = this.noteInput.value.trim();
         if (this.driverList.find((d) => d.i.trim() == id.trim())) {
             window.alert("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
             return;
         }
-        this.addDriver(id, name, spoken);
-        this.driverList.push({ i: id, n: name, s: spoken });
+        this.addDriver(id, name, spoken, note);
+        this.driverList.push({ i: id, n: name, s: spoken, t: note });
         this.saveDrivers();
     }
     handleDeleteDriver(e) {
@@ -1299,9 +1303,10 @@ class RaceManager {
             let row = makeTr();
             row.appendChild(makeTd(d.i));
             row.appendChild(makeTd(d.n));
+            row.appendChild(makeTd(d.t));
             let check = makeElement("input");
-            check.addEventListener("click", (e) => e.preventDefault());
             check.setAttribute("type", "checkbox");
+            check.style.pointerEvents = "none";
             row.append(makeTd(check));
             table.tBodies[0].appendChild(row);
             row.addEventListener("click", () => {
@@ -2148,7 +2153,7 @@ window.onload = () => {
     connectionController.initDetectorConnection(window.location.hostname);
 };
 let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
-let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversButton'), byId('exportDriversButton'));
+let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('driverNoteInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversButton'), byId('exportDriversButton'));
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
     connectionController.connection().send('%I&');
