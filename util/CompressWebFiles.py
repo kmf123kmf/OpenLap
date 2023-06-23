@@ -7,7 +7,6 @@
 import sys
 import os
 import gzip
-import shutil
 
 paths = [
     "../web/js/openlap.js",
@@ -37,8 +36,8 @@ for path in paths:
     gzipPath = os.path.join(head, gzipName)
 
     with open(path, "rb") as f:
-        with gzip.open(gzipPath, "wb", 6) as g:
-            shutil.copyfileobj(f, g)
+        with gzip.GzipFile(gzipPath, "wb", 6, None, 0) as gz:
+            gz.write(f.read())
 
     size = os.path.getsize(gzipPath)
     bytes = bytearray(size)
