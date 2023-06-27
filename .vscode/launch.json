@@ -16,7 +16,7 @@
                 "runtimeArgs": [
                   "--enable-speech-dispatcher",
                   "--new-window",
-                  "-user-data-dir=\"/${workspaceFolder}/DevProfile\"",
+                  "--user-data-dir=${workspaceFolder}/.devprofile",
                   "--remote-debugging-port=9222",
                   "--disable-background-networking"
                 ]
