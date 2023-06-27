@@ -606,7 +606,7 @@ function makeOpt(content?: string | HTMLElement): HTMLOptionElement {
 
 function selectTabPage(e: HTMLElement) {
     e.parentElement.querySelectorAll(":scope>button")
-        .forEach((btn) =>{
+        .forEach((btn) => {
             (byId(btn.getAttribute("page")) as HTMLDivElement).style.display = "none";
         });
     (byId(e.getAttribute("page")) as HTMLDivElement).style.display = "block";
@@ -701,36 +701,36 @@ class DriverManager {
 
         addButton.addEventListener("click", this.handleAddDriver.bind(this));
         testSpeechButton.addEventListener("click", () => this.testDriverSpeech(this.nameInput.value.trim(), this.spokenInput.value.trim()));
-    
+
         let uploadInput = makeElement("input");
-        uploadInput.setAttribute("type","file");
+        uploadInput.setAttribute("type", "file");
         uploadInput.setAttribute("accept", ".json");
         uploadInput.style.display = "none";
-        uploadInput.addEventListener("change", (e)=> this.importDrivers(e));
+        uploadInput.addEventListener("change", (e) => this.importDrivers(e));
         document.body.appendChild(uploadInput);
 
-        importButton.addEventListener("click", ()=>uploadInput.click());
-        exportButton.addEventListener("click", ()=> this.exportDrivers());
+        importButton.addEventListener("click", () => uploadInput.click());
+        exportButton.addEventListener("click", () => this.exportDrivers());
     }
 
-    private importDrivers(e){
+    private importDrivers(e) {
         let json: string = null;
         let file = (e.target as HTMLInputElement).files[0];
         let reader = new FileReader();
-        reader.addEventListener("load", (event)=>{
+        reader.addEventListener("load", (event) => {
             json = event.target.result as string;
-            try{
+            try {
                 let data = JSON.parse(json);
                 this.setDriverList(data);
             }
-            catch{
+            catch {
                 console.log('Failed to load drivers file');
             }
         });
         reader.readAsText(file);
     }
 
-    private exportDrivers(){
+    private exportDrivers() {
         let d = new Date();
         let filename = `OpenLap_Drivers_${d.getFullYear()}-${d.getMonth()}-${d.getDay()}_${d.getHours()}.${d.getMinutes()}.json`;
         let data = JSON.stringify(this.driverList, null, 2);
@@ -754,7 +754,7 @@ class DriverManager {
         return [...this.driverList];
     }
 
-    private clearTable(){
+    private clearTable() {
         let tbody: HTMLTableSectionElement = this.driverTable.querySelector('tbody');
         empty(tbody);
     }
@@ -774,9 +774,9 @@ class DriverManager {
         }
     }
 
-    private setDriverList(list: any[]){
-        for(let d of list){
-            if(!d.hasOwnProperty("i") || !d.hasOwnProperty("n") || !d.hasOwnProperty("s")){
+    private setDriverList(list: any[]) {
+        for (let d of list) {
+            if (!d.hasOwnProperty("i") || !d.hasOwnProperty("n") || !d.hasOwnProperty("s")) {
                 alert('Could not import driver list');
                 return;
             }
@@ -850,7 +850,7 @@ class DriverManager {
         let note = this.noteInput.value.trim();
 
         if (this.driverList.find((d) => d.i.trim() == id.trim())) {
-            window.alert("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
+            AlertDialog.show("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
             return;
         }
         this.addDriver(id, name, spoken, note);
@@ -1572,7 +1572,7 @@ class RaceManager {
         startDelaySelect.classList.add("raceDisabled");
 
         this.driversDialog = driversDialog;
-        
+
         new DialogAnimator(this.driversDialog);
 
         this.positionGraph = new PositionGraph(positionGraphDiv);
@@ -2338,21 +2338,30 @@ class RaceManager {
 
 class ConnectionController {
     private detectorConnection: DetectorConnection = null;
+    private connectionDialog: HTMLDialogElement;
+    private settingsDialog: HTMLDialogElement;
     private hostName: string;
     private connStatusSpan: HTMLSpanElement;
 
     constructor(
         configureButton: HTMLButtonElement,
-        dialog: HTMLDialogElement,
+        connectionDialog: HTMLDialogElement,
+        settingsDialog: HTMLDialogElement,
         addressInput: HTMLInputElement,
         okButton: HTMLButtonElement,
         statusSpan: HTMLSpanElement) {
 
         this.connStatusSpan = statusSpan;
+        this.connectionDialog = connectionDialog;
+        this.settingsDialog = settingsDialog;
 
         configureButton.addEventListener("click", () => {
-            addressInput.value = this.hostName;
-            dialog.showModal();
+            if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                this.settingsDialog.showModal();
+            }
+            else {
+                AlertDialog.show("Using simulated detector.  Nothing to configure.");
+            }
         });
 
         okButton.addEventListener("click", () => {
@@ -2370,7 +2379,12 @@ class ConnectionController {
             this.initDetectorConnection(this.hostName);
         });
 
-        new DialogAnimator(dialog);
+        new DialogAnimator(connectionDialog);
+        new DialogAnimator(settingsDialog);
+    }
+
+    public showConnectionDialog() {
+        this.connectionDialog.showModal();
     }
 
     public connection(): DetectorConnection {
@@ -2578,6 +2592,31 @@ class WebSocketDetectorConnection extends DetectorConnection {
     }
 }
 
+class AlertDialog {
+    static dialog: HTMLDialogElement;
+
+    static init(d: HTMLDialogElement): void {
+        this.dialog = d;
+        d.addEventListener("close",()=>{
+            empty(this.getMessageDiv());
+        });
+        new DialogAnimator(d);
+    }
+
+    static show(msg: string = null): void {
+        let msgDiv = this.getMessageDiv();
+        if (msg) {
+            empty(msgDiv);
+            msgDiv.textContent = msg;
+        }
+        this.dialog.showModal();
+    }
+
+    static getMessageDiv(): HTMLDivElement {
+        return this.dialog.querySelector(".alertMessageDiv") as HTMLDivElement;
+    }
+}
+
 window.speechSynthesis.onvoiceschanged = (e) => {
     AppSettings.initSpeechVoices(byId('voiceSelect') as HTMLSelectElement);
 };
@@ -2618,6 +2657,8 @@ window.onload = () => {
     }
     driverManager.loadDrivers();
 
+    AlertDialog.init(byId("alertDialog") as HTMLDialogElement);
+
     AppSettings.initMinLapTime(byId('minLapTimeInput') as HTMLInputElement);
     AppSettings.initMaxLapTime(byId('maxLapTimeInput') as HTMLInputElement);
     AppSettings.initDecimalPlaces(byId('displayDecimalPlacesSelect') as HTMLSelectElement);
@@ -2650,12 +2691,18 @@ window.onload = () => {
         byId('leaderToneFadeNone') as HTMLInputElement,
         byId('leaderToneFadeLin') as HTMLInputElement);
 
-    connectionController.initDetectorConnection(window.location.hostname);
+    if (window.location.hostname != '') {
+        connectionController.initDetectorConnection(window.location.hostname);
+    }
+    else {
+        connectionController.showConnectionDialog();
+    }
 };
 
 let connectionController = new ConnectionController(
     byId("configureConnectionButton") as HTMLButtonElement,
     byId("connectionDialog") as HTMLDialogElement,
+    byId("detectorSettingsDialog") as HTMLDialogElement,
     byId("detectorAddressInput") as HTMLInputElement,
     byId("connectionDialogOkButton") as HTMLButtonElement,
     byId("connStatusSpan") as HTMLSpanElement,

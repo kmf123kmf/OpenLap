@@ -684,7 +684,7 @@ class DriverManager {
         let id = this.idInput.value.trim();
         let note = this.noteInput.value.trim();
         if (this.driverList.find((d) => d.i.trim() == id.trim())) {
-            window.alert("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
+            AlertDialog.show("Unable to add driver. A driver is already associated with Transponder ID " + id.trim());
             return;
         }
         this.addDriver(id, name, spoken, note);
@@ -1924,13 +1924,21 @@ class RaceManager {
 }
 class ConnectionController {
     detectorConnection = null;
+    connectionDialog;
+    settingsDialog;
     hostName;
     connStatusSpan;
-    constructor(configureButton, dialog, addressInput, okButton, statusSpan) {
+    constructor(configureButton, connectionDialog, settingsDialog, addressInput, okButton, statusSpan) {
         this.connStatusSpan = statusSpan;
+        this.connectionDialog = connectionDialog;
+        this.settingsDialog = settingsDialog;
         configureButton.addEventListener("click", () => {
-            addressInput.value = this.hostName;
-            dialog.showModal();
+            if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                this.settingsDialog.showModal();
+            }
+            else {
+                AlertDialog.show("Detector connection is simulated.  Nothing to configure.");
+            }
         });
         okButton.addEventListener("click", () => {
             let address = addressInput.value.toUpperCase().trim();
@@ -1944,7 +1952,11 @@ class ConnectionController {
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
         });
-        new DialogAnimator(dialog);
+        new DialogAnimator(connectionDialog);
+        new DialogAnimator(settingsDialog);
+    }
+    showConnectionDialog() {
+        this.connectionDialog.showModal();
     }
     connection() {
         return this.detectorConnection;
@@ -2116,6 +2128,27 @@ class WebSocketDetectorConnection extends DetectorConnection {
         }
     }
 }
+class AlertDialog {
+    static dialog;
+    static init(d) {
+        this.dialog = d;
+        d.addEventListener("close", () => {
+            empty(this.getMessageDiv());
+        });
+        new DialogAnimator(d);
+    }
+    static show(msg = null) {
+        let msgDiv = this.getMessageDiv();
+        if (msg) {
+            empty(msgDiv);
+            msgDiv.textContent = msg;
+        }
+        this.dialog.showModal();
+    }
+    static getMessageDiv() {
+        return this.dialog.querySelector(".alertMessageDiv");
+    }
+}
 window.speechSynthesis.onvoiceschanged = (e) => {
     AppSettings.initSpeechVoices(byId('voiceSelect'));
 };
@@ -2145,6 +2178,7 @@ window.onload = () => {
         b.click();
     }
     driverManager.loadDrivers();
+    AlertDialog.init(byId("alertDialog"));
     AppSettings.initMinLapTime(byId('minLapTimeInput'));
     AppSettings.initMaxLapTime(byId('maxLapTimeInput'));
     AppSettings.initDecimalPlaces(byId('displayDecimalPlacesSelect'));
@@ -2153,9 +2187,14 @@ window.onload = () => {
     AppSettings.initExpirationTone(byId('endTonePitchRange'), byId('endToneDurationRange'), byId('endToneVolumeRange'), byId('endToneFadeNone'), byId('endToneFadeLin'));
     AppSettings.initLapTone(byId('lapTonePitchRange'), byId('lapToneDurationRange'), byId('lapToneVolumeRange'), byId('lapToneFadeNone'), byId('lapToneFadeLin'));
     AppSettings.initLeaderTone(byId('leaderTonePitchRange'), byId('leaderToneDurationRange'), byId('leaderToneVolumeRange'), byId('leaderToneFadeNone'), byId('leaderToneFadeLin'));
-    connectionController.initDetectorConnection(window.location.hostname);
+    if (window.location.hostname != '') {
+        connectionController.initDetectorConnection(window.location.hostname);
+    }
+    else {
+        connectionController.showConnectionDialog();
+    }
 };
-let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
+let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorSettingsDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('driverNoteInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversButton'), byId('exportDriversButton'));
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
