@@ -9,11 +9,11 @@ import os
 import gzip
 
 paths = [
-    "../web/js/openlap.js",
-    "../web/css/openlap.css",
-    "../web/css/pure-min.css",
-    "../web/index.htm",
-    "../web/settings.htm",
+    "../Web/js/openlap.js",
+    "../Web/css/openlap.css",
+    "../Web/css/pure-min.css",
+    "../Web/index.htm",
+    "../Web/settings.htm",
     ]
 
 dest = "../detector/software/OpenLapDetector"
