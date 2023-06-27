@@ -1,0 +1,16 @@
+Board Manager URLs
+
+ESP32 - https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
+ATtinycore - http://drazzy.com/package_drazzy.com_index.json  - https://github.com/SpenceKonde/ATTinyCore
+
+libraries
+Adafruit ST7735 and ST7789 Library - https://github.com/adafruit/Adafruit-ST7735-Library
+	Adafruit BusIO
+	Adafruit GFX Library
+	Adafruit seesaw Library
+	SD
+ArduinoQueue - https://github.com/EinarArnason/ArduinoQueue
+
+Install from zip:
+https://github.com/me-no-dev/AsyncTCP
+https://github.com/me-no-dev/ESPAsyncWebServer 
