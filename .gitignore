@@ -180,7 +180,7 @@ DocProject/Help/html
 publish/
 
 # Ubuntu devprofile directory
-"/*
+.devprofile/
 
 # Publish Web Output
 *.[Pp]ublish.xml
