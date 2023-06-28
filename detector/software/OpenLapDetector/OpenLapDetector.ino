@@ -422,8 +422,8 @@ void setup() {
   delay(10);
 
   // initialize TFT
-  tft.init(135, 240);  // Init ST7789 240x135
-  tft.setRotation(1);
+  tft.init(DISPLAY_HEIGHT, DISPLAY_WIDTH);
+  tft.setRotation(1); // 1 = landscape, usb port on the right
   tft.fillScreen(ST77XX_BLACK);
 
 /****************************************
