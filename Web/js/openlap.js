@@ -1928,7 +1928,7 @@ class ConnectionController {
     settingsDialog;
     hostName;
     connStatusSpan;
-    constructor(configureButton, connectionDialog, settingsDialog, addressInput, okButton, statusSpan) {
+    constructor(configureButton, connectionDialog, settingsDialog, addressInput, statusSpan) {
         this.connStatusSpan = statusSpan;
         this.connectionDialog = connectionDialog;
         this.settingsDialog = settingsDialog;
@@ -1942,7 +1942,8 @@ class ConnectionController {
                 AlertDialog.show("Using simulated detector.  Nothing to configure.");
             }
         });
-        okButton.addEventListener("click", () => {
+        let connDialogOkButton = this.connectionDialog.querySelector(".okbutton");
+        connDialogOkButton.addEventListener("click", () => {
             let address = addressInput.value.toUpperCase().trim();
             console.log(`Connection address changed to ${address}`);
             if (address == "SIM") {
@@ -1953,6 +1954,23 @@ class ConnectionController {
             }
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
+        });
+        let settingsDialogOkButton = this.settingsDialog.querySelector(".okbutton");
+        settingsDialogOkButton.addEventListener("click", () => {
+            if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                let ssidInput = this.settingsDialog.querySelector(".ssidInput");
+                let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                let json = JSON.stringify({
+                    command: "setNetworkSettings",
+                    ssid: ssidInput.value,
+                    password: passwordInput.value
+                });
+                console.log(json);
+                this.detectorConnection.send(json);
+            }
+            else {
+                console.log("Cannot set detector network settings on simulated connection");
+            }
         });
         new DialogAnimator(connectionDialog);
         new DialogAnimator(settingsDialog);
@@ -2000,6 +2018,9 @@ class ConnectionController {
                         let passwordInput = this.settingsDialog.querySelector(".passwordInput");
                         ssidInput.value = response.ssid;
                         passwordInput.value = response.password;
+                        break;
+                    case "setNetworkSettings":
+                        AlertDialog.show("Detector Settings Saved.  Please restart the detector to apply changes.");
                         break;
                 }
             }
@@ -2228,7 +2249,7 @@ window.onload = () => {
         connectionController.showConnectionDialog();
     }
 };
-let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorSettingsDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
+let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorSettingsDialog"), byId("detectorAddressInput"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('driverNoteInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversButton'), byId('exportDriversButton'));
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
