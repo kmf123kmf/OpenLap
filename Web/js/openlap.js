@@ -1934,10 +1934,12 @@ class ConnectionController {
         this.settingsDialog = settingsDialog;
         configureButton.addEventListener("click", () => {
             if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                let json = JSON.stringify({ command: "getNetworkSettings" });
+                this.detectorConnection.send(json);
                 this.settingsDialog.showModal();
             }
             else {
-                AlertDialog.show("Detector connection is simulated.  Nothing to configure.");
+                AlertDialog.show("Using simulated detector.  Nothing to configure.");
             }
         });
         okButton.addEventListener("click", () => {
@@ -1983,9 +1985,41 @@ class ConnectionController {
         }
         this.detectorConnection.onConnected = () => this.onDetectorOpen();
         this.detectorConnection.onDisconnected = () => this.onDetectorClose();
-        this.detectorConnection.onMessage = onDetectorMessage;
+        this.detectorConnection.onMessage = (msg) => this.onDetectorMessage(msg);
         console.log('Connecting to detector');
         this.detectorConnection.connect();
+    }
+    onDetectorMessage(msg) {
+        if (msg.at(0) == '{') {
+            let response = JSON.parse(msg);
+            console.log(response);
+            if (response.hasOwnProperty("inResponseTo")) {
+                switch (response.inResponseTo) {
+                    case "getNetworkSettings":
+                        let ssidInput = this.settingsDialog.querySelector(".ssidInput");
+                        let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                        ssidInput.value = response.ssid;
+                        passwordInput.value = response.password;
+                        break;
+                }
+            }
+            return;
+        }
+        if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
+            return;
+        }
+        switch (msg.at(1)) {
+            case 'L':
+                let cma = msg.indexOf(',');
+                let end = cma > 0 ? cma : 4;
+                let id = parseInt(msg.slice(2, end), 16);
+                let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
+                byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
+                raceManager.recordDetection(id, millis);
+                break;
+            default:
+                break;
+        }
     }
     onDetectorOpen() {
         console.log('Connection opened');
@@ -2205,25 +2239,5 @@ function beginSim(e) {
 }
 function endSim(e) {
     connectionController.connection().send('%E&');
-}
-function onDetectorMessage(msg) {
-    if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
-        return;
-    }
-    switch (msg.at(1)) {
-        case 'L':
-            let cma = msg.indexOf(',');
-            let end = cma > 0 ? cma : 4;
-            let id = parseInt(msg.slice(2, end), 16);
-            let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
-            handleDetection(id, millis);
-            break;
-        default:
-            break;
-    }
-}
-function handleDetection(id, millis) {
-    byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
-    raceManager.recordDetection(id, millis);
 }
 //# sourceMappingURL=openlap.js.map

@@ -2357,6 +2357,8 @@ class ConnectionController {
 
         configureButton.addEventListener("click", () => {
             if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                let json = JSON.stringify({command:"getNetworkSettings"});
+                this.detectorConnection.send(json);
                 this.settingsDialog.showModal();
             }
             else {
@@ -2393,7 +2395,6 @@ class ConnectionController {
 
     initDetectorConnection(hostName: string) {
         if (!hostName || hostName.trim() == '') {
-
             hostName = "SIM";
         }
         this.hostName = hostName.trim().toUpperCase();
@@ -2417,9 +2418,47 @@ class ConnectionController {
 
         this.detectorConnection.onConnected = () => this.onDetectorOpen();
         this.detectorConnection.onDisconnected = () => this.onDetectorClose();
-        this.detectorConnection.onMessage = onDetectorMessage;
+        this.detectorConnection.onMessage = (msg: string) => this.onDetectorMessage(msg);
         console.log('Connecting to detector');
         this.detectorConnection.connect();
+    }
+
+    onDetectorMessage(msg: string) {
+        if(msg.at(0) == '{'){
+            let response = JSON.parse(msg);
+            console.log(response);
+
+            if(response.hasOwnProperty("inResponseTo")){
+                switch(response.inResponseTo){
+                    case "getNetworkSettings":
+                        let ssidInput = this.settingsDialog.querySelector(".ssidInput") as HTMLInputElement;
+                        let passwordInput = this.settingsDialog.querySelector(".passwordInput") as HTMLInputElement;
+                        ssidInput.value = response.ssid;
+                        passwordInput.value = response.password;
+                        break;
+                }
+            }
+
+            return;
+        }
+    
+        if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
+            return;
+        }
+
+        switch (msg.at(1)) {
+            case 'L':
+                let cma = msg.indexOf(',');
+                let end = cma > 0 ? cma : 4;
+                let id = parseInt(msg.slice(2, end), 16);
+                let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
+
+                byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
+                raceManager.recordDetection(id, millis);
+                break;
+            default:
+                break;
+        }
     }
 
     onDetectorOpen() {
@@ -2747,28 +2786,5 @@ function beginSim(e: Event) {
 }
 
 function endSim(e: Event) {
-
     connectionController.connection().send('%E&');
-}
-
-function onDetectorMessage(msg: string) {
-    if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
-        return;
-    }
-    switch (msg.at(1)) {
-        case 'L':
-            let cma = msg.indexOf(',');
-            let end = cma > 0 ? cma : 4;
-            let id = parseInt(msg.slice(2, end), 16);
-            let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
-            handleDetection(id, millis);
-            break;
-        default:
-            break;
-    }
-}
-
-function handleDetection(id: number, millis: number) {
-    byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
-    raceManager.recordDetection(id, millis);
 }

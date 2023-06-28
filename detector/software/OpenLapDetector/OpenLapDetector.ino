@@ -8,6 +8,8 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include <ArduinoQueue.h>
+#include <ArduinoJson.h>
+
 #include "openlap_gz.h"
 
 #define DISPLAY_WIDTH 240
@@ -68,9 +70,9 @@ ArduinoQueue<DetectionInfo> outQueue(128);
 DetectionRecord displayDetectionRecord = { false, { 0, 0 } };
 DetectionRecord recentDetections[NUM_RECENT_DETECTIONS];
 
-String displaySSID;
-String displayPWD;
-String displayAddress;
+String displaySSID = "";
+String displayPWD = "";
+String displayAddress = "";
 String dbgMessage = "";
 
 void updateDisplay() {
@@ -81,16 +83,21 @@ void updateDisplay() {
   canvas.setCursor(0, 0);
   canvas.setTextWrap(true);
 
-  canvas.print(F("SSID: "));
-  canvas.println(displaySSID.c_str());
+  if (displaySSID != "") {
+    canvas.print(F("SSID: "));
+    canvas.println(displaySSID.c_str());
+  }
 
-  if (displayPWD != "<hidden>") {
+  if (displayPWD != "" && displayPWD != "<hidden>") {
     canvas.print(F("Pass: "));
     canvas.println(displayPWD.c_str());
   }
-  canvas.println();
-  canvas.print(F("IP: "));
-  canvas.println(displayAddress.c_str());
+
+  if (displayAddress != "") {
+    canvas.println();
+    canvas.print(F("IP: "));
+    canvas.println(displayAddress.c_str());
+  }
 
   canvas.setTextColor(ST77XX_YELLOW);
 
@@ -137,10 +144,9 @@ void endSim() {
  *  Handles 3 character messages of the form %X&, where X is the command data
  *  See https://www.zround.com/wiki/doku.php/lapcounters:protocols:open
  */
-void handleZRoundMessage(void *data, size_t len) {
-  char *msg = (char *)data;
-  if (len >= 3 && msg[0] == '%' && msg[2] == '&') {
-    switch (msg[1]) {
+void handleZRoundMessage(uint8_t *data, size_t len) {
+  if (len >= 3 && data[0] == '%' && data[2] == '&') {
+    switch (data[1]) {
       /** 
       * Per the ZRound protocol %C& should be replied to with an ACK, %A&.
       * However, when using TCP/IP the ACK is ignored by ZRound, so
@@ -165,8 +171,39 @@ void handleZRoundMessage(void *data, size_t len) {
   }
 }
 
+void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) {
+  DynamicJsonDocument doc(256);
+  DeserializationError error = deserializeJson(doc, data, len);
+
+  if (error) {
+    Serial.println("deserializeJson() failed");
+    return;
+  }
+
+  const char *command = doc["command"];
+  if (strcmp(command, "getNetworkSettings") == 0) {
+    preferences.begin(PREF_NS, true);
+    String userSSID = preferences.getString(USSID_KEY);
+    String userPWD = preferences.getString(UPWD_KEY);
+    preferences.end();
+
+    String resJson;
+    DynamicJsonDocument resDoc(256);
+    resDoc["inResponseTo"] = command;
+    resDoc["ssid"] = userSSID;
+    resDoc["password"] = userPWD;
+    serializeJson(resDoc, resJson);
+    client->text(resJson.c_str());
+    return;
+  }
+
+  if (strcmp(command, "setNetworkSettings") == 0) {
+    return;
+  }
+}
+
 void onTcpClientData(void *s, AsyncClient *c, void *data, size_t len) {
-  handleZRoundMessage(data, len);
+  handleZRoundMessage((uint8_t *)data, len);
 }
 
 void onTcpClientDisconnect(void *s, AsyncClient *client) {
@@ -205,10 +242,14 @@ void onTcpClient(void *s, AsyncClient *client) {
   Serial.println(client->getRemotePort());
 }
 
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *data, size_t len) {
   AwsFrameInfo *info = (AwsFrameInfo *)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-    handleZRoundMessage(data, len);
+    if (data[0] == '%') {
+      handleZRoundMessage(data, len);
+    } else if (data[0] == '{') {
+      handleJsonMessage(client, data, len);
+    }
   }
 }
 
@@ -220,7 +261,7 @@ void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventTyp
     case WS_EVT_DISCONNECT:
       break;
     case WS_EVT_DATA:
-      handleWebSocketMessage(arg, data, len);
+      handleWebSocketMessage(client, arg, data, len);
       break;
     case WS_EVT_PONG:
     case WS_EVT_ERROR:
@@ -377,6 +418,7 @@ void setup() {
   /****************************************
  *  Join WiFi network or run in AP mode
  ****************************************/
+
   WiFi.mode(WIFI_STA);
 
   // Look for previously stored SSID and passkey
@@ -391,6 +433,7 @@ void setup() {
     // attempt to join network
     WiFi.begin(ssid, password);
 
+    displayMessage("Connecting to WiFi...");
     // try for ten seconds
     for (int i = 0; i < 10; i++) {
       if (WiFi.status() != WL_CONNECTED) {
@@ -403,6 +446,7 @@ void setup() {
       displayPWD = "<hidden>";
       displayAddress = WiFi.localIP().toString();
     } else {
+      displayMessage("Failed to connect");
     }
   }
 
@@ -415,6 +459,7 @@ void setup() {
     displayPWD = AP_PWD;
     displayAddress = WiFi.softAPIP().toString();
   }
+  displayMessage("");
 
   /****************************************
  *  Setup the web server
@@ -463,7 +508,7 @@ void setup() {
     response->addHeader("Content-Encoding", "gzip");
     request->send(response);
   });
-  
+
   server.on("/css/pure-min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/css", pure_min_css_gz, pure_min_css_gz_len);
     response->addHeader("Content-Encoding", "gzip");
