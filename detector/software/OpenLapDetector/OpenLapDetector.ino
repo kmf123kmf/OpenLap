@@ -198,6 +198,16 @@ void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) 
   }
 
   if (strcmp(command, "setNetworkSettings") == 0) {
+    preferences.begin(PREF_NS, true);
+    preferences.putString(USSID_KEY, doc["ssid"]);
+    preferences.putString(UPWD_KEY, doc["password"]);
+    preferences.end();
+    
+    String resJson;
+    DynamicJsonDocument resDoc(256);
+    resDoc["inResponseTo"] = command;
+    serializeJson(resDoc, resJson);
+    client->text(resJson.c_str());
     return;
   }
 }
@@ -232,7 +242,6 @@ void onTcpClient(void *s, AsyncClient *client) {
 
   theTcpClient = client;
 
-  //client->setRxTimeout(3);
   client->onData(onTcpClientData);
   client->onDisconnect(onTcpClientDisconnect);
 
@@ -293,9 +302,8 @@ void notifyClients() {
   }
 }
 
-uint32_t lastCleanupTime = 0;
-
 void notifyTask(void *parameter) {
+  uint32_t lastCleanupTime = 0;
   while (true) {
     bool shouldUpdateDisplay = false;
     bool shouldNotifyClients = false;
@@ -398,7 +406,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  /*************************
+/*************************
  *  Initialize display
  *************************/
   // turn on backlite
@@ -415,7 +423,7 @@ void setup() {
   tft.setRotation(1);
   tft.fillScreen(ST77XX_BLACK);
 
-  /****************************************
+/****************************************
  *  Join WiFi network or run in AP mode
  ****************************************/
 
@@ -445,12 +453,13 @@ void setup() {
       displaySSID = ssid;
       displayPWD = "<hidden>";
       displayAddress = WiFi.localIP().toString();
-    } else {
+    } 
+    else {
       displayMessage("Failed to connect");
     }
   }
 
-  // Not connect to network.  Create a private network instead.
+  // Not connected to network.  Create a private network instead.
   if (WiFi.status() != WL_CONNECTED) {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(AP_SSID, AP_PWD);
@@ -461,35 +470,11 @@ void setup() {
   }
   displayMessage("");
 
-  /****************************************
+/****************************************
  *  Setup the web server
  ****************************************/
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
-
-  server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request) {
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", settings_htm_gz, settings_htm_gz_len);
-    response->addHeader("Content-Encoding", "gzip");
-    request->send(response);
-  });
-
-  server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("ssid", true)) {
-      AsyncWebParameter *p = request->getParam("ssid", true);
-      preferences.begin(PREF_NS, false);
-      preferences.putString(USSID_KEY, p->value());
-      preferences.end();
-    }
-
-    if (request->hasParam("pwd", true)) {
-      AsyncWebParameter *p = request->getParam("pwd", true);
-      preferences.begin(PREF_NS, false);
-      preferences.putString(UPWD_KEY, p->value());
-      preferences.end();
-    }
-
-    request->send_P(200, "text/plain", "Settings updated.  Please restart device for changes to take effect.");
-  });
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_htm_gz, index_htm_gz_len);
@@ -517,25 +502,25 @@ void setup() {
 
   server.begin();
 
-  /****************************************
+/****************************************
  *  Setup the tcp server
  ****************************************/
   tcpServer.onClient(onTcpClient, NULL);
   tcpServer.begin();
 
-  /****************************************
+/****************************************
  *  Display connection info to user
  ****************************************/
   updateDisplay();
 
-  /****************************************
+/****************************************
  *  Setup IR receiving
  ****************************************/
   initPCIInterruptForTinyReceiver();
 
-  /****************************************
-   * Update clients and display on core0
-   ****************************************/
+/****************************************
+ * Update clients and display on core0
+ ****************************************/
   xTaskCreatePinnedToCore(notifyTask, "NotifyTask", 10000, NULL, 0, NULL, 0);
 }
 
