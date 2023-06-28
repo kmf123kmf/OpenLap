@@ -198,9 +198,12 @@ void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) 
   }
 
   if (strcmp(command, "setNetworkSettings") == 0) {
+    const char *ssid = doc["ssid"];
+    const char *password = doc["password"];
+    
     preferences.begin(PREF_NS, true);
-    preferences.putString(USSID_KEY, doc["ssid"]);
-    preferences.putString(UPWD_KEY, doc["password"]);
+    preferences.putString(USSID_KEY, ssid);
+    preferences.putString(UPWD_KEY, password);
     preferences.end();
     
     String resJson;
