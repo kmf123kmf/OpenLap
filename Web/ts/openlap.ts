@@ -1802,7 +1802,6 @@ class RaceManager {
 
     async startRace() {
         document.querySelectorAll(".raceDisabled").forEach((e) => (e as any).disabled = true);
-        document.querySelectorAll('.scoreBoard [draggable="true"]').forEach((e) => (e as any).setAttribute('draggable', 'false'));
 
         this.setSessionMode();
         this.leaderBoard = [];
@@ -1847,7 +1846,6 @@ class RaceManager {
         this.expired = true;
 
         document.querySelectorAll(".raceDisabled").forEach((e) => (e as any).disabled = false);
-        document.querySelectorAll('.scoreBoard [draggable="false"]').forEach((e) => (e as any).setAttribute('draggable', 'true'));
         console.log("Session Stopped");
         this.startButton.textContent = "Start";
     }
@@ -1977,8 +1975,13 @@ class RaceManager {
     }
 
     vehicleTableRowDragStart(e: DragEvent): any {
-        this.dragSource = e.target;
-        e.dataTransfer.effectAllowed = 'move';
+        if (this.running) {
+            return false;
+        }
+        else {
+            this.dragSource = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+        }
     }
 
     vehicleTableRowDragEnter(e: DragEvent): any {

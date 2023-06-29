@@ -1459,7 +1459,6 @@ class RaceManager {
     }
     async startRace() {
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = true);
-        document.querySelectorAll('.scoreBoard [draggable="true"]').forEach((e) => e.setAttribute('draggable', 'false'));
         this.setSessionMode();
         this.leaderBoard = [];
         this.resetSideBoard();
@@ -1495,7 +1494,6 @@ class RaceManager {
         this.running = false;
         this.expired = true;
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = false);
-        document.querySelectorAll('.scoreBoard [draggable="false"]').forEach((e) => e.setAttribute('draggable', 'true'));
         console.log("Session Stopped");
         this.startButton.textContent = "Start";
     }
@@ -1609,8 +1607,13 @@ class RaceManager {
         e.preventDefault();
     }
     vehicleTableRowDragStart(e) {
-        this.dragSource = e.target;
-        e.dataTransfer.effectAllowed = 'move';
+        if (this.running) {
+            return false;
+        }
+        else {
+            this.dragSource = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+        }
     }
     vehicleTableRowDragEnter(e) {
         e.preventDefault();
