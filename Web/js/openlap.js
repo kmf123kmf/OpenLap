@@ -1459,7 +1459,6 @@ class RaceManager {
     }
     async startRace() {
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = true);
-        document.querySelectorAll('.scoreBoard [draggable="true"]').forEach((e) => e.setAttribute('draggable', 'false'));
         this.setSessionMode();
         this.leaderBoard = [];
         this.resetSideBoard();
@@ -1495,7 +1494,6 @@ class RaceManager {
         this.running = false;
         this.expired = true;
         document.querySelectorAll(".raceDisabled").forEach((e) => e.disabled = false);
-        document.querySelectorAll('.scoreBoard [draggable="false"]').forEach((e) => e.setAttribute('draggable', 'true'));
         console.log("Session Stopped");
         this.startButton.textContent = "Start";
     }
@@ -1609,8 +1607,13 @@ class RaceManager {
         e.preventDefault();
     }
     vehicleTableRowDragStart(e) {
-        this.dragSource = e.target;
-        e.dataTransfer.effectAllowed = 'move';
+        if (this.running) {
+            return false;
+        }
+        else {
+            this.dragSource = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+        }
     }
     vehicleTableRowDragEnter(e) {
         e.preventDefault();
@@ -1928,19 +1931,22 @@ class ConnectionController {
     settingsDialog;
     hostName;
     connStatusSpan;
-    constructor(configureButton, connectionDialog, settingsDialog, addressInput, okButton, statusSpan) {
+    constructor(configureButton, connectionDialog, settingsDialog, addressInput, statusSpan) {
         this.connStatusSpan = statusSpan;
         this.connectionDialog = connectionDialog;
         this.settingsDialog = settingsDialog;
         configureButton.addEventListener("click", () => {
             if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                let json = JSON.stringify({ command: "getNetworkSettings" });
+                this.detectorConnection.send(json);
                 this.settingsDialog.showModal();
             }
             else {
-                AlertDialog.show("Detector connection is simulated.  Nothing to configure.");
+                AlertDialog.show("Using simulated detector.  Nothing to configure.");
             }
         });
-        okButton.addEventListener("click", () => {
+        let connDialogOkButton = this.connectionDialog.querySelector(".okbutton");
+        connDialogOkButton.addEventListener("click", () => {
             let address = addressInput.value.toUpperCase().trim();
             console.log(`Connection address changed to ${address}`);
             if (address == "SIM") {
@@ -1951,6 +1957,23 @@ class ConnectionController {
             }
             this.hostName = address;
             this.initDetectorConnection(this.hostName);
+        });
+        let settingsDialogOkButton = this.settingsDialog.querySelector(".okbutton");
+        settingsDialogOkButton.addEventListener("click", () => {
+            if (this.detectorConnection instanceof WebSocketDetectorConnection) {
+                let ssidInput = this.settingsDialog.querySelector(".ssidInput");
+                let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                let json = JSON.stringify({
+                    command: "setNetworkSettings",
+                    ssid: ssidInput.value,
+                    password: passwordInput.value
+                });
+                console.log(json);
+                this.detectorConnection.send(json);
+            }
+            else {
+                console.log("Cannot set detector network settings on simulated connection");
+            }
         });
         new DialogAnimator(connectionDialog);
         new DialogAnimator(settingsDialog);
@@ -1978,14 +2001,49 @@ class ConnectionController {
             this.detectorConnection = new SimulatedConnection();
         }
         else {
-            console.log(`Connecting to detector at %{hostName}`);
+            console.log(`Connecting to detector at ${hostName}`);
             this.detectorConnection = new WebSocketDetectorConnection(`ws://${hostName}/ws`);
         }
         this.detectorConnection.onConnected = () => this.onDetectorOpen();
         this.detectorConnection.onDisconnected = () => this.onDetectorClose();
-        this.detectorConnection.onMessage = onDetectorMessage;
+        this.detectorConnection.onMessage = (msg) => this.onDetectorMessage(msg);
         console.log('Connecting to detector');
         this.detectorConnection.connect();
+    }
+    onDetectorMessage(msg) {
+        if (msg.at(0) == '{') {
+            let response = JSON.parse(msg);
+            console.log(response);
+            if (response.hasOwnProperty("inResponseTo")) {
+                switch (response.inResponseTo) {
+                    case "getNetworkSettings":
+                        let ssidInput = this.settingsDialog.querySelector(".ssidInput");
+                        let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                        ssidInput.value = response.ssid;
+                        passwordInput.value = response.password;
+                        break;
+                    case "setNetworkSettings":
+                        AlertDialog.show("Detector Settings Saved.  Please restart the detector to apply changes.");
+                        break;
+                }
+            }
+            return;
+        }
+        if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
+            return;
+        }
+        switch (msg.at(1)) {
+            case 'L':
+                let cma = msg.indexOf(',');
+                let end = cma > 0 ? cma : 4;
+                let id = parseInt(msg.slice(2, end), 16);
+                let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
+                byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
+                raceManager.recordDetection(id, millis);
+                break;
+            default:
+                break;
+        }
     }
     onDetectorOpen() {
         console.log('Connection opened');
@@ -2194,7 +2252,7 @@ window.onload = () => {
         connectionController.showConnectionDialog();
     }
 };
-let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorSettingsDialog"), byId("detectorAddressInput"), byId("connectionDialogOkButton"), byId("connStatusSpan"));
+let connectionController = new ConnectionController(byId("configureConnectionButton"), byId("connectionDialog"), byId("detectorSettingsDialog"), byId("detectorAddressInput"), byId("connStatusSpan"));
 let driverManager = new DriverManager(byId('driverNameInput'), byId('driverSpokenNameInput'), byId('driverTestSpeechButton'), byId('driverTransponderIdInput'), byId('driverNoteInput'), byId('addDriverButton'), byId('driversTable'), byId('importDriversButton'), byId('exportDriversButton'));
 let raceManager = new RaceManager(driverManager, byId('startButton'), byId('modeSelect'), byId('timeControlSelect'), byId('timeControlInput'), byId('elapsedTimeDiv'), byId('remainingTimeDiv'), byId('scoreBoardTable'), byId('lapsBoardDiv'), byId("positionGraphDiv"), byId("addDriversButton"), byId("registerDriversDialog"), byId("resetDriversButton"), byId("clearDriversButton"), byId("startDelaySelect"));
 function initDetector() {
@@ -2205,25 +2263,5 @@ function beginSim(e) {
 }
 function endSim(e) {
     connectionController.connection().send('%E&');
-}
-function onDetectorMessage(msg) {
-    if (msg.at(0) != '%' || msg.at(msg.length - 1) != '&') {
-        return;
-    }
-    switch (msg.at(1)) {
-        case 'L':
-            let cma = msg.indexOf(',');
-            let end = cma > 0 ? cma : 4;
-            let id = parseInt(msg.slice(2, end), 16);
-            let millis = parseInt(msg.slice(cma > 0 ? end + 1 : end, msg.length - 1), 16);
-            handleDetection(id, millis);
-            break;
-        default:
-            break;
-    }
-}
-function handleDetection(id, millis) {
-    byId('lastDetectionId').textContent = `${id} @${new Date().toLocaleTimeString([], { hour12: false })}`;
-    raceManager.recordDetection(id, millis);
 }
 //# sourceMappingURL=openlap.js.map

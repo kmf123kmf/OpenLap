@@ -39,7 +39,7 @@
           <input id="detectorAddressInput" type="text" placeholder="IP Address or &quot;SIM&quot;" />
         </div>
         <div class="pure-controls">
-          <button id="connectionDialogOkButton" class="pure-button pure-button-primary closer" formmethod="dialog"
+          <button id="connectionDialogOkButton" class="pure-button pure-button-primary closer okbutton" formmethod="dialog"
             value="default">OK</button>
           <button class="pure-button closer" formmethod="dialog" value="cancel">Cancel</button>
         </div>
@@ -59,14 +59,14 @@
       <fieldset>
         <div class="pure-control-group">
           <label for="detectorSsidInput">SSID</label>
-          <input id="detectorSsidInput" type="text" placeholder="SSID" />
+          <input id="detectorSsidInput" class="ssidInput" type="text" placeholder="SSID" />
         </div>
         <div class="pure-control-group">
           <label for="detectorPasswordInput">Password</label>
-          <input id="detectorPasswordInput" type="password" />
+          <input id="detectorPasswordInput" class="passwordInput" type="password" />
         </div>
         <div class="pure-controls">
-          <button id="detectorSettingsOkButton" class="pure-button closer" formmethod="dialog">OK</button>
+          <button id="detectorSettingsOkButton" class="pure-button closer okbutton" formmethod="dialog">OK</button>
           <button class="pure-button closer" formmethod="dialog" value="cancel">Cancel</button>
         </div>
       </fieldset>
