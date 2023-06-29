@@ -4,7 +4,6 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7789.h>
 #include <SPI.h>
-#include <ESPmDNS.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
@@ -33,8 +32,6 @@ AsyncClient *theTcpClient = NULL;
 #define PREF_NS "openrc"
 #define USSID_KEY "ussid"
 #define UPWD_KEY "upwd"
-#define UMDNS_KEY "umdns"
-#define DEFAULT_MDNS "OpenLap"
 
 /* Access Point */
 #define AP_SSID "OpenRC"
@@ -445,7 +442,6 @@ void setup() {
   preferences.begin(PREF_NS, true);
   String userSSID = preferences.getString(USSID_KEY);
   String userPWD = preferences.getString(UPWD_KEY);
-  String userMDNS = preferences.getString(UMDNS_KEY);
   preferences.end();
 
   if (userSSID != NULL) {
