@@ -76,6 +76,7 @@ DetectionRecord recentDetections[NUM_RECENT_DETECTIONS];
 String displaySSID = "";
 String displayPWD = "";
 String displayAddress = "";
+String displayMDNS = "";
 String dbgMessage = "";
 
 void updateDisplay() {
@@ -100,6 +101,12 @@ void updateDisplay() {
     canvas.println();
     canvas.print(F("IP: "));
     canvas.println(displayAddress.c_str());
+  }
+
+  if (displayMDNS != "") {
+    canvas.println();
+    canvas.print(F("mDNS: "));
+    canvas.println((displayMDNS + ".local").c_str());
   }
 
   canvas.setTextColor(ST77XX_YELLOW);
@@ -188,13 +195,19 @@ void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) 
     preferences.begin(PREF_NS, true);
     String userSSID = preferences.getString(USSID_KEY);
     String userPWD = preferences.getString(UPWD_KEY);
+    String userMDNS = preferences.getString(UMDNS_KEY);
     preferences.end();
+
+    if (userMDNS == NULL || userMDNS == "") {
+      userMDNS = DEFAULT_MDNS;
+    }
 
     String resJson;
     DynamicJsonDocument resDoc(256);
     resDoc["inResponseTo"] = command;
     resDoc["ssid"] = userSSID;
     resDoc["password"] = userPWD;
+    resDoc["mDNS"] = userMDNS;
     serializeJson(resDoc, resJson);
     client->text(resJson.c_str());
     return;
@@ -203,18 +216,23 @@ void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) 
   if (strcmp(command, "setNetworkSettings") == 0) {
     const char *ssid = doc["ssid"];
     const char *password = doc["password"];
+    const char *mdns = doc["mDNS"];
 
     Serial.print("SSID changed to ");
     Serial.println(ssid);
 
     Serial.print("PWD changed to ");
     Serial.println(password);
-    
+
+    Serial.print("mDNS changed to ");
+    Serial.println(mdns);
+
     preferences.begin(PREF_NS, false);
     preferences.putString(USSID_KEY, ssid);
     preferences.putString(UPWD_KEY, password);
+    preferences.putString(UMDNS_KEY, mdns);
     preferences.end();
-    
+
     String resJson;
     DynamicJsonDocument resDoc(256);
     resDoc["inResponseTo"] = command;
@@ -418,7 +436,7 @@ void setup() {
 
   Serial.begin(115200);
 
-/*************************
+  /*************************
  *  Initialize display
  *************************/
   // turn on backlite
@@ -432,10 +450,10 @@ void setup() {
 
   // initialize TFT
   tft.init(DISPLAY_HEIGHT, DISPLAY_WIDTH);
-  tft.setRotation(1); // 1 = landscape, usb port on the right
+  tft.setRotation(1);  // 1 = landscape, usb port on the right
   tft.fillScreen(ST77XX_BLACK);
 
-/****************************************
+  /****************************************
  *  Join WiFi network or run in AP mode
  ****************************************/
 
@@ -466,8 +484,7 @@ void setup() {
       displaySSID = ssid;
       displayPWD = "<hidden>";
       displayAddress = WiFi.localIP().toString();
-    } 
-    else {
+    } else {
       displayMessage("Failed to connect");
     }
   }
@@ -483,7 +500,13 @@ void setup() {
   }
   displayMessage("");
 
-/****************************************
+  if (userMDNS == NULL || userMDNS == "") {
+    userMDNS = DEFAULT_MDNS;
+  }
+  MDNS.begin(userMDNS);
+  displayMDNS = userMDNS;
+
+  /****************************************
  *  Setup the web server
  ****************************************/
   ws.onEvent(onWsEvent);
@@ -515,23 +538,23 @@ void setup() {
 
   server.begin();
 
-/****************************************
+  /****************************************
  *  Setup the tcp server
  ****************************************/
   tcpServer.onClient(onTcpClient, NULL);
   tcpServer.begin();
 
-/****************************************
+  /****************************************
  *  Display connection info to user
  ****************************************/
   updateDisplay();
 
-/****************************************
+  /****************************************
  *  Setup IR receiving
  ****************************************/
   initPCIInterruptForTinyReceiver();
 
-/****************************************
+  /****************************************
  * Update clients and display on core0
  ****************************************/
   xTaskCreatePinnedToCore(notifyTask, "NotifyTask", 10000, NULL, 0, NULL, 0);
