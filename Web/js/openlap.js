@@ -1963,10 +1963,12 @@ class ConnectionController {
             if (this.detectorConnection instanceof WebSocketDetectorConnection) {
                 let ssidInput = this.settingsDialog.querySelector(".ssidInput");
                 let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                let mdnsInput = this.settingsDialog.querySelector(".mdnsInput");
                 let json = JSON.stringify({
                     command: "setNetworkSettings",
-                    ssid: ssidInput.value,
-                    password: passwordInput.value
+                    ssid: ssidInput.value.trim(),
+                    password: passwordInput.value.trim(),
+                    mDNS: mdnsInput.value.trim(),
                 });
                 console.log(json);
                 this.detectorConnection.send(json);
@@ -2019,8 +2021,10 @@ class ConnectionController {
                     case "getNetworkSettings":
                         let ssidInput = this.settingsDialog.querySelector(".ssidInput");
                         let passwordInput = this.settingsDialog.querySelector(".passwordInput");
+                        let mdnsInput = this.settingsDialog.querySelector(".mdnsInput");
                         ssidInput.value = response.ssid;
                         passwordInput.value = response.password;
+                        mdnsInput.value = response.mDNS;
                         break;
                     case "setNetworkSettings":
                         AlertDialog.show("Detector Settings Saved.  Please restart the detector to apply changes.");
