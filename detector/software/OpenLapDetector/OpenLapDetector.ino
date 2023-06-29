@@ -200,8 +200,14 @@ void handleJsonMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) 
   if (strcmp(command, "setNetworkSettings") == 0) {
     const char *ssid = doc["ssid"];
     const char *password = doc["password"];
+
+    Serial.print("SSID changed to ");
+    Serial.println(ssid);
+
+    Serial.print("PWD changed to ");
+    Serial.println(password);
     
-    preferences.begin(PREF_NS, true);
+    preferences.begin(PREF_NS, false);
     preferences.putString(USSID_KEY, ssid);
     preferences.putString(UPWD_KEY, password);
     preferences.end();

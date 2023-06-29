@@ -1998,7 +1998,7 @@ class ConnectionController {
             this.detectorConnection = new SimulatedConnection();
         }
         else {
-            console.log(`Connecting to detector at %{hostName}`);
+            console.log(`Connecting to detector at ${hostName}`);
             this.detectorConnection = new WebSocketDetectorConnection(`ws://${hostName}/ws`);
         }
         this.detectorConnection.onConnected = () => this.onDetectorOpen();
